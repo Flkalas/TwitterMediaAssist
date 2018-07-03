@@ -40,7 +40,7 @@ function downloadVideoObject() {
         return
     }
 
-    videoSource = videoTag.src
+    var videoSource = videoTag.src
     if (!videoSource) {
         videoSource = $(this).closest('.tweet').find('source')[0].src
     }
@@ -50,7 +50,7 @@ function downloadVideoObject() {
     } else if (videoSource.includes('ext_tw_video')) {
         browser.runtime.sendMessage({
             type: 'mp4Video',
-            address: videoSource
+            url: videoSource
         });
     } else {
         processGifVideo(videoSource);
