@@ -1,0 +1,101 @@
+.tva_download_action {
+	display: inline-block;
+	*display: inline;
+	vertical-align: top;
+}
+
+.tva_download_icon::before {
+	content: "\2B73";
+}
+
+.tva_ext_container {
+	float: right !important;
+	border-radius: 10px;
+	margin: 15px;
+	padding: 10px;
+	position: fixed !important;
+	top: 36px !important;
+	right: 5px !important;
+	width: auto;
+	height: 30px;
+	animation: fadein 1s;
+}
+
+@keyframes fadein {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+.tva_ext_spinner {
+	float: left;
+	margin: 0px;
+	width: 24px;
+	height: auto;
+	min-width: 24px;
+	min-height: 24px;
+	vertical-align: middle;
+	position: relative;
+	padding: 3px;
+}
+
+.tva_ext_text_box {
+	display: table;
+	height: 24px;
+	padding: 3px;
+	padding-left: 10px;
+	float: left;
+}
+
+.tva_ext_text {
+	display: table-cell;
+	text-align: center;
+	vertical-align: middle;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	margin: 0;
+}
+
+.tva_hide {
+	visibility: hidden;
+	opacity: 0;
+	transition: visibility 0s 0.5s, opacity 0.5s linear;
+}
+
+@keyframes spinner {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.tva_spinner {
+	float: left;
+	min-width: 24px;
+	min-height: 24px;
+}
+
+.tva_spinner:after {
+	content: 'Loading…';
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 16px;
+	height: 16px;
+	margin-top: -10px;
+	margin-left: -10px;
+}
+
+.tva_spinner:not(:required):after {
+	content: '';
+	border-radius: 50%;
+	border: 3px solid transparent;
+	border-top-color: #8DBAFF;
+	border-left-color: #8DBAFF;
+	border-right-color: #8DBAFF;
+	border-bottom-color: #FFFFFF;
+	animation: spinner .6s linear infinite;
+	-webkit-animation: spinner .6s linear infinite;
+}

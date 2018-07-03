@@ -1,0 +1,41 @@
+{
+  "manifest_version": 2,
+  "name": "Twitter Video Assist",
+  "description": "For your better Twitter video experience.",
+  "version": "1.0.0.0",
+
+  "applications": {
+    "gecko": {
+      "id": "rectifying@gmail.com"
+    }
+  },
+
+  "permissions": [
+    "*://twitter.com/*",
+    "*://*.twitter.com/*",
+    "*://*.twimg.com/*",
+    "storage",
+    "downloads",
+    "tabs"
+  ],
+
+  "icons": {
+    "48": "icon_small.png",
+    "96": "icon_medium.png"
+  },
+
+  "content_scripts": [{
+    "matches": ["*://twitter.com/*"],
+    "css": ["twitter_video_assist_client.css"],
+    "js": ["jquery-3.3.1.min.js", "twitter_video_downloader.js", "twitter_video_assist_client.js"]
+  }],
+
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": true
+  },
+
+  "background": {
+    "scripts": ["twitter_video_downloader.js", "twitter_video_assist_server.js"]
+  }
+}
