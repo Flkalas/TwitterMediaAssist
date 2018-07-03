@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Twitter Video Assist",
   "description": "For your better Twitter video experience.",
-  "version": "1.0.0.0",
+  "version": "1.0.0.1",
 
   "applications": {
     "gecko": {
