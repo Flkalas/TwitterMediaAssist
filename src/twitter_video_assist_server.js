@@ -63,6 +63,7 @@ function processWorkerData(filename) {
                 saveAs: items.spcificPathName,
                 filename: filename + ".gif"
             });
+            workerSpace[filename].terminate();
             delete workerSpace[filename];
             if (numberOfWorker() == 0) {
                 sendSpinnerStateMessage(true);
