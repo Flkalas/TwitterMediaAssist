@@ -1,8 +1,23 @@
 var downloadButton = '<div class="ProfileTweet-action tva_download_action"><button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton tva_js_download" type="button"><div class="IconContainer js-tooltip" data-original-title="Video Download"><span class="Icon Icon--medium tva_download_icon"></span><span class="u-hiddenVisually"></span></div></button></div>';
 var progressPopup = '<div class="stream-item tva_ext_container tva_hide" aria-live="polite"><div class="tva_ext_spinner"><div class="tva_spinner"></div></div><div class="tva_ext_text_box"><p class="tva_ext_text">GIF Converting...</p></div></div>'
 
+var downloadIcon = '<g xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-180 11.999625205993652,9.00012493133545)"><path d="M17.53 7.47l-5-5c-.293-.293-.768-.293-1.06 0l-5 5c-.294.293-.294.768 0 1.06s.767.294 1.06 0l3.72-3.72V15c0 .414.336.75.75.75s.75-.336.75-.75V4.81l3.72 3.72c.146.147.338.22.53.22s.384-.072.53-.22c.293-.293.293-.767 0-1.06z"/></g><g><path d="M19.708 21.944H4.292C3.028 21.944 2 20.916 2 19.652V14c0-.414.336-.75.75-.75s.75.336.75.75v5.652c0 .437.355.792.792.792h15.416c.437 0 .792-.355.792-.792V14c0-.414.336-.75.75-.75s.75.336.75.75v5.652c0 1.264-1.028 2.292-2.292 2.292z"/></g></g>'
+var reactProgressPopup = '<div class="tva-react-spinner-wrapper"><div class="tva_spinner tva_spinner_old"></div><span class="css-901oao css-16my406 r-1qd0xha r-ad9z0x r-bcqeeo r-qvutc0">GIFing...</span></div>'
+
 $(document).ready(initialize);
 $(document).on('DOMNodeInserted', injectAdditionalDownloadButtons);
+$(document).on({
+    mouseenter: function (e) {
+        $(e.currentTarget).find('svg').prev().addClass('r-zv2cs0');
+        $(e.currentTarget).find('svg').prev().parent().parent().removeClass('r-111h2gw')
+        $(e.currentTarget).find('svg').prev().parent().parent().addClass('r-13gxpu9')
+    },
+    mouseleave: function (e) {
+        $(e.currentTarget).find('svg').prev().removeClass('r-zv2cs0');
+        $(e.currentTarget).find('svg').prev().parent().parent().addClass('r-111h2gw')
+        $(e.currentTarget).find('svg').prev().parent().parent().removeClass('r-13gxpu9')
+    }
+}, ".tva-download-icon");
 browser.runtime.onMessage.addListener(processRequest)
 
 function initialize() {
@@ -14,9 +29,27 @@ function initialize() {
 }
 
 function injectAdditionalDownloadButtons(event) {
+    if ($(event.target).html().includes('video')) {
+        injectReactDownloadButton($(event.target).find('video'))
+    }
+
     $(event.target).find('.AdaptiveMedia-video').each(function () {
         injectDownloadButton(this);
     });
+}
+
+function injectReactDownloadButton(target) {
+    var tweet = target.closest('article');
+
+    var icons = tweet.find('div[role="group"] div:nth-child(4)');
+    icons.after(icons.clone())
+
+    var download = icons.next()
+    download.addClass('tva-download-icon')
+    download.children('div:first-child').data('testid', 'download')
+    download.children('div:first-child').attr('aria-label', 'Video Download');
+    download.find('svg').html(downloadIcon)
+    download.click('article', downloadVideoObject);
 }
 
 function injectDownloadButton(target) {
@@ -31,22 +64,28 @@ function injectDownloadButton(target) {
 
     var favIcon = $(tweet).find('div.ProfileTweet-action--favorite')[0];
     $(favIcon).after(downloadButton);
-    $(favIcon).siblings(".tva_download_action").find('button.tva_js_download').click(downloadVideoObject);
+    $(favIcon).siblings(".tva_download_action").find('button.tva_js_download').click('.tweet', downloadVideoObject);
 }
 
-function downloadVideoObject() {
-    var videoTag = $(this).closest('.tweet').find('video')[0];
+function downloadVideoObject(event) {
+    const tweetSelector = event.data
+    const tweet = $(event.currentTarget).closest(tweetSelector)
+    var videoTag = tweet.find('video')[0];
+
     if (!videoTag) {
         return
     }
 
     var videoSource = videoTag.src
     if (!videoSource) {
-        videoSource = $(this).closest('.tweet').find('source')[0].src
+        videoSource = tweet.find('source')[0].src
     }
 
     if (videoSource.includes('blob')) {
-        processBlobVideo($(this).closest('.tweet').data("tweet-id"));
+        const tweetId = getTweetId(tweet, tweetSelector);
+        if (!!tweetId) {
+            processBlobVideo(tweetId);
+        }
     } else if (videoSource.includes('ext_tw_video')) {
         browser.runtime.sendMessage({
             type: 'mp4Video',
@@ -57,11 +96,39 @@ function downloadVideoObject() {
     }
 }
 
+function getTweetId(tweet, selector) {
+    const re = /(?:https:\/\/[A-z.]*\/\w*\/status\/)(\d*)(?:\/?\w*)/g;
+
+    if (selector === '.tweet') {
+        return tweet.data("tweet-id")
+    } else if (selector === 'article') {
+        for (const element of tweet.find('a').toArray()) {
+            const match = re.exec(element.href)
+            if (match) {
+                return match[1];
+            }
+        }
+    }
+}
+
 function processRequest(request) {
-    if (request.hideSpinner) {
-        $(".tva_ext_container").addClass("tva_hide");
+    toggleReactProgressPopup(request);
+}
+
+function toggleReactProgressPopup(request) {
+    if (!$(".tweet").length) {
+        let spinner = $('.tva-react-spinner-wrapper')
+        if (spinner.length && request.hideSpinner) {
+            spinner.remove();
+        } else {
+            $('.css-1dbjc4n.r-16y2uox.r-1wbh5a2.r-1pi2tsx.r-1777fci h2:first-child ').append($(reactProgressPopup));
+        }
     } else {
-        $(".tva_ext_container").removeClass("tva_hide");
+        if (request.hideSpinner) {
+            $(".tva_ext_container").addClass("tva_hide");
+        } else {
+            $(".tva_ext_container").removeClass("tva_hide");
+        }
     }
 }
 

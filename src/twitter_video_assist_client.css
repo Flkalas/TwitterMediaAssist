@@ -9,16 +9,15 @@
 }
 
 .tva_ext_container {
-	float: right !important;
+	float: right;
 	border-radius: 10px;
-	margin: 15px;
 	padding: 10px;
-	position: fixed !important;
-	top: 36px !important;
-	right: 5px !important;
-	width: auto;
+	position: fixed;
+	top: 36px;
+	right: 5px;
 	height: 30px;
 	animation: fadein 1s;
+	z-index: 6001;
 }
 
 @keyframes fadein {
@@ -40,6 +39,11 @@
 	vertical-align: middle;
 	position: relative;
 	padding: 3px;
+}
+
+.tva-react-spinner-wrapper {
+	display: inline-flex;
+	float: right;
 }
 
 .tva_ext_text_box {
