@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Twitter Media Assist",
   "description": "For your better Twitter media experience.",
-  "version": "1.1",
+  "version": "1.1.1",
 
   "applications": {
     "gecko": {

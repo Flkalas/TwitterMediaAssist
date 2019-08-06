@@ -35,7 +35,7 @@ function injectAdditionalDownloadButtons(event) {
 
     const src = $(event.target).attr('src')
     if (src !== undefined && src.includes('pbs.twimg.com/media')) {
-        injectReactDownloadButton($(event.target).closest('div.css-1dbjc4n.r-156q2ks'))
+        injectReactDownloadButton($(event.target).closest('div.css-1dbjc4n.r-1udh08x'))
     }
 
     $(event.target).find('.AdaptiveMedia-video').each(function () {
