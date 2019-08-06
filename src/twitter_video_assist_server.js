@@ -18,6 +18,10 @@ function processRequest(request) {
         case 'mp4Video':
             downloadMp4Video(request.url);
             break;
+
+        case 'image':
+            downloadImage(request.url)
+            break;
     }
 }
 

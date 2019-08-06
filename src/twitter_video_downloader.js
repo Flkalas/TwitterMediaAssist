@@ -60,6 +60,13 @@ async function processComplexMp4Video(id) {
     });
 }
 
+function processImageDownload(src) {
+    chrome.runtime.sendMessage({
+        type: 'image',
+        url: src
+    });
+}
+
 function getMp4Url(url) {
     return new Promise((resolve, reject) => {
         var init = {
@@ -246,6 +253,34 @@ function downloadMp4Video(url) {
             url: url,
             saveAs: items.spcificPathName
         });
+    });
+}
+
+function downloadImage(url) {
+    chrome.storage.sync.get({
+        spcificPathName: false
+    }, (items) => {
+        const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g;
+        const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g;
+
+        const nameMatches = uploadedImageQuery.exec(url)
+        const formatMatches = extensionAttributeQuery.exec(url)
+
+        let params = {
+            url: url,
+            saveAs: items.spcificPathName
+        }
+
+        if (formatMatches.length && nameMatches.length) {
+            const filename = nameMatches[1]
+            const format = formatMatches[1]
+
+            if (format === 'jpg') {
+                params.filename = filename + '.jpg'
+            }
+        }
+
+        chrome.downloads.download(params);
     });
 }
 
