@@ -29,13 +29,14 @@ function initialize() {
 }
 
 function injectAdditionalDownloadButtons(event) {
-    if ($(event.target).html().includes('video')) {
-        injectReactDownloadButton($(event.target).find('video'))
-    }
+    const tweets = $(event.target).find('article')
 
-    const src = $(event.target).attr('src')
-    if (src !== undefined && src.includes('pbs.twimg.com/media')) {
-        injectReactDownloadButton($(event.target).closest('div.css-1dbjc4n.r-1udh08x'))
+    if (tweets.length) {
+        tweets.each((index, element) => {
+            analysisDom(element)
+        })
+    } else {
+        analysisDom(event.target)
     }
 
     $(event.target).find('.AdaptiveMedia-video').each(function () {
@@ -43,8 +44,21 @@ function injectAdditionalDownloadButtons(event) {
     });
 }
 
+function hasMedia(element) {
+    const isImage = element.outerHTML.includes('pbs.twimg.com/media')
+    const isVideo = $(element).html().includes('video')
+
+    return isImage || isVideo
+}
+
+function analysisDom(tweet) {
+    if (hasMedia(tweet)) {
+        injectReactDownloadButton(tweet)
+    }
+}
+
 function injectReactDownloadButton(target) {
-    var tweet = target.closest('article');
+    var tweet = $(target).closest('article');
 
     if (tweet.find('div[role="group"] div.tva-download-icon').length) {
         return

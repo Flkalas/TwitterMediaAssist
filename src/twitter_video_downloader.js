@@ -274,10 +274,7 @@ function downloadImage(url) {
         if (formatMatches.length && nameMatches.length) {
             const filename = nameMatches[1]
             const format = formatMatches[1]
-
-            if (format === 'jpg') {
-                params.filename = filename + '.jpg'
-            }
+            params.filename = `${filename}.${format}`
         }
 
         chrome.downloads.download(params);
