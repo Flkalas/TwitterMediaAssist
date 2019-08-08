@@ -97,13 +97,13 @@ function downloadMediaObject(event) {
     var imageTags = tweet.find('img');
 
     if (videoTag) {
-        downloadVideoObject(videoTag)
+        downloadVideoObject(tweet, tweetSelector, videoTag)
     } else if (imageTags.length) {
         downloadImageObject(imageTags)
     }
 }
 
-function downloadVideoObject(videoTag) {
+function downloadVideoObject(tweet, tweetSelector, videoTag) {
     var videoSource = videoTag.src
     if (!videoSource) {
         videoSource = tweet.find('source')[0].src
