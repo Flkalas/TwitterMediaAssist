@@ -84,9 +84,15 @@ function getMp4Url(url) {
         fetch(url, init)
             .then((response) => {
                 if (response.status == 200) {
-                    response.text().then((text) => {
-                        var targetVideoURL = findVideoURL(text);
-                        resolve(targetVideoURL);
+                    response.json().then((json) => {
+                        let mp4Variants = json.extended_entities.media[0].video_info.variants.filter(variant => variant.content_type === 'video/mp4')
+                        mp4Variants = mp4Variants.sort((a, b) => (b.bitrate - a.bitrate))
+
+                        let url = ''
+                        if (mp4Variants.length) {
+                            url = mp4Variants[0].url
+                        }
+                        resolve(url);
                     })
                 } else {
                     reject({
@@ -292,16 +298,6 @@ function getCookie(cname) {
         }
         if (c.indexOf(name) == 0) {
             return c.substring(name.length, c.length);
-        }
-    }
-    return "";
-}
-
-function findVideoURL(page) {
-    var parsed = page.replace(/&quot;/g, '"').replace(/\\/g, '').split('"');
-    for (var i in parsed) {
-        if ((parsed[i].search("video.twimg.com") > 0) && (parsed[i].search("mp4") > 0)) {
-            return parsed[i];
         }
     }
     return "";
