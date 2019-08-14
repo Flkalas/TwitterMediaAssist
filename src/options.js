@@ -1,6 +1,7 @@
 function restoreOptions() {
 	browser.storage.sync.get({
 		spcificPathName: false,
+		readableName: false,
 		isConvertGIF: true,
 		isSaveMP4: true,
 		isVideoSaveAsMP4: true,
@@ -10,6 +11,7 @@ function restoreOptions() {
 
 function onGot(items) {
 	document.getElementById('specific').checked = items.spcificPathName;
+	document.getElementById('readable').checked = items.readableName;
 	document.getElementById('gifasgif').checked = items.isConvertGIF;
 	document.getElementById('gifasmp4').checked = items.isSaveMP4;
 	document.getElementById('videoasmp4').checked = items.isVideoSaveAsMP4;
@@ -30,6 +32,7 @@ function setItem() {
 
 function saveOptions() {
 	var specific = document.getElementById('specific').checked;
+	var readable = document.getElementById('readable').checked;
 	var convertGIF = document.getElementById('gifasgif').checked;
 	var saveMP4 = document.getElementById('gifasmp4').checked;
 	var saveVideoMP4 = document.getElementById('videoasmp4').checked;
@@ -37,6 +40,7 @@ function saveOptions() {
 
 	browser.storage.sync.set({
 		spcificPathName: specific,
+		readableName: readable,
 		isConvertGIF: convertGIF,
 		isSaveMP4: saveMP4,
 		isVideoSaveAsMP4: saveVideoMP4,
@@ -45,6 +49,7 @@ function saveOptions() {
 }
 
 document.getElementById('specific').addEventListener("change", saveOptions);
+document.getElementById('readable').addEventListener("change", saveOptions);
 document.getElementById('gifasgif').addEventListener("change", saveOptions);
 document.getElementById('gifasmp4').addEventListener("change", saveOptions);
 document.getElementById('videoasmp4').addEventListener("change", saveOptions);

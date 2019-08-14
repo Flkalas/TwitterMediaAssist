@@ -8,28 +8,28 @@ browser.runtime.onMessage.addListener(processRequest);
 function processRequest(request) {
     switch (request.type) {
         case 'gif':
-            convertGif(request.url);
+            convertGif(request.url, request.readableName);
             break;
 
         case 'tsVideo':
-            downloadTsVideo(request.data, request.filename);
+            downloadTsVideo(request.data, request.filename, request.readableName);
             break;
 
         case 'mp4Video':
-            downloadMp4Video(request.url);
+            downloadMp4Video(request.url, request.readableName);
             break;
 
         case 'image':
-            downloadImage(request.url)
+            downloadImage(request.url, request.readableName)
             break;
     }
 }
 
-function convertGif(url) {
+function convertGif(url, readableFilename) {
     sendSpinnerStateMessage(false);
 
     var filename = url.substring(url.lastIndexOf('/') + 1).split(".")[0];
-    var worker = createWorker(filename);
+    var worker = createWorker(filename, readableFilename);
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
     var video = document.createElement('video');
@@ -43,18 +43,18 @@ function convertGif(url) {
     video.oncanplaythrough = processVideo(canvas, context, video, worker);
 }
 
-function createWorker(filename) {
+function createWorker(filename, readableFilename) {
     workerSpace[filename] = new Worker('gif_converter.js');
-    workerSpace[filename].onmessage = processWorkerData(filename);
+    workerSpace[filename].onmessage = processWorkerData(filename, readableFilename);
     return workerSpace[filename];
 }
 
-function processWorkerData(filename) {
+function processWorkerData(filename, readableFilename) {
     return (event) => {
         browser.storage.sync.get({
-            spcificPathName: false
+            spcificPathName: false,
+            readableName: false
         }).then((items) => {
-
             var u8Array = new Uint8Array(atob(event.data).split("").map(function (c) {
                 return c.charCodeAt(0);
             }));
@@ -62,10 +62,16 @@ function processWorkerData(filename) {
                 type: 'image/gif'
             });
             var url = URL.createObjectURL(blob);
+
+            let downloadFilename = filename
+            if (items.readableName) {
+                downloadFilename = readableFilename
+            }
+
             browser.downloads.download({
                 url: url,
                 saveAs: items.spcificPathName,
-                filename: filename + ".gif"
+                filename: downloadFilename + ".gif"
             });
             workerSpace[filename].terminate();
             delete workerSpace[filename];

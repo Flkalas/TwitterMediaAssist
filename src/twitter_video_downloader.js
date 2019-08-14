@@ -1,19 +1,19 @@
-function processBlobVideo(id) {
+function processBlobVideo(id, readableName) {
     browser.storage.sync.get({
         isVideoSaveAsTS: true,
         isVideoSaveAsMP4: true,
     }).then((items) => {
         if (items.isVideoSaveAsTS) {
-            processComplexTsVideo(id);
+            processComplexTsVideo(id, readableName);
         }
 
         if (items.isVideoSaveAsMP4) {
-            processComplexMp4Video(id);
+            processComplexMp4Video(id, readableName);
         }
     });
 }
 
-function processGifVideo(url) {
+function processGifVideo(url, readableName) {
     browser.storage.sync.get({
         isConvertGIF: true,
         isSaveMP4: true,
@@ -21,20 +21,22 @@ function processGifVideo(url) {
         if (items.isConvertGIF) {
             browser.runtime.sendMessage({
                 type: 'gif',
-                url: url
+                url: url,
+                readableName: readableName
             });
         }
 
         if (items.isSaveMP4) {
             browser.runtime.sendMessage({
                 type: 'mp4Video',
-                url: url
+                url: url,
+                readableName: readableName
             });
         }
     });
 }
 
-async function processComplexTsVideo(id) {
+async function processComplexTsVideo(id, readableName) {
     var jsonUrl = "https://api.twitter.com/1.1/videos/tweet/config/";
     jsonUrl += id + ".json";
 
@@ -47,22 +49,25 @@ async function processComplexTsVideo(id) {
     browser.runtime.sendMessage({
         type: 'tsVideo',
         data: videoData,
-        filename: filename
+        filename: filename,
+        readableName: readableName
     });
 }
 
-async function processComplexMp4Video(id) {
+async function processComplexMp4Video(id, readableName) {
     var pageUrl = "https://api.twitter.com/1.1/statuses/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&trim_user=false&include_ext_media_color=true&id=" + id;
     var mp4Url = await getMp4Url(pageUrl);
     browser.runtime.sendMessage({
         type: 'mp4Video',
-        url: mp4Url
+        url: mp4Url,
+        readableName: readableName
     });
 }
 
-function processImageDownload(src) {
+function processImageDownload(src, readableName) {
     chrome.runtime.sendMessage({
         type: 'image',
+        readableName: readableName,
         url: src
     });
 }
@@ -235,36 +240,57 @@ function mergeFragment(buffer, fragment) {
     return merged
 }
 
-function downloadTsVideo(data, tsFilename) {
+function downloadTsVideo(data, tsFilename, readableName) {
     browser.storage.sync.get({
-        spcificPathName: false
+        spcificPathName: false,
+        readableName: false
     }).then((items) => {
         var blob = new Blob([data], {
             type: 'video/mp2t'
         });
         var url = URL.createObjectURL(blob);
-        browser.downloads.download({
+
+        let options = {
             url: url,
             saveAs: items.spcificPathName,
             filename: tsFilename + ".ts"
-        });
+        }
+
+        if (items.readableName) {
+            options.filename = readableName + '.ts'
+        }
+
+        browser.downloads.download(options);
     });
 }
 
-function downloadMp4Video(url) {
+function fileExtension(url) {
+    const splited = url.split('.')
+    return splited[splited.length - 1].split('?')[0]
+}
+
+function downloadMp4Video(url, readableName) {
     browser.storage.sync.get({
-        spcificPathName: false
+        spcificPathName: false,
+        readableName: false
     }).then((items) => {
-        browser.downloads.download({
+        let options = {
             url: url,
             saveAs: items.spcificPathName
-        });
+        }
+
+        if (items.readableName) {
+            options.filename = readableName + '.' + fileExtension(url)
+        }
+
+        browser.downloads.download(options);
     });
 }
 
-function downloadImage(url) {
+function downloadImage(url, readableName) {
     chrome.storage.sync.get({
-        spcificPathName: false
+        spcificPathName: false,
+        readableName: false
     }, (items) => {
         const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g;
         const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g;
@@ -272,18 +298,27 @@ function downloadImage(url) {
         const nameMatches = uploadedImageQuery.exec(url)
         const formatMatches = extensionAttributeQuery.exec(url)
 
-        let params = {
+        let options = {
             url: url,
             saveAs: items.spcificPathName
         }
 
-        if (formatMatches.length && nameMatches.length) {
-            const filename = nameMatches[1]
-            const format = formatMatches[1]
-            params.filename = `${filename}.${format}`
+        let filename = 'no_title'
+
+        if (nameMatches.length) {
+            filename = nameMatches[1]
         }
 
-        chrome.downloads.download(params);
+        if (items.readableName) {
+            filename = readableName
+        }
+
+        if (formatMatches.length) {
+            const format = formatMatches[1]
+            options.filename = `${filename}.${format}`
+        }
+
+        chrome.downloads.download(options);
     });
 }
 
