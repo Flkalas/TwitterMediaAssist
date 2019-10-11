@@ -67,6 +67,7 @@ function injectReactModalDownloadButton(modal) {
     var icon = modal.find('div[role="group"] div:nth-child(4)');
 
     icon.after(icon.clone())
+    icons.attr('class', icons.prev().attr('class'))
 
     var download = icon.next()
     download.addClass('tva-modal-download-icon')
