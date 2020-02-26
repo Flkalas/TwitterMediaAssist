@@ -2,13 +2,7 @@
   "manifest_version": 2,
   "name": "Twitter Media Assist",
   "description": "For your better Twitter media experience.",
-  "version": "1.2.3",
-
-  "applications": {
-    "gecko": {
-      "id": "rectifying@gmail.com"
-    }
-  },
+  "version": "3.0.0",
 
   "permissions": [
     "*://twitter.com/*",
@@ -27,15 +21,14 @@
   "content_scripts": [{
     "matches": ["*://twitter.com/*", "*://mobile.twitter.com/*"],
     "css": ["twitter_video_assist_client.css"],
-    "js": ["jquery-3.3.1.min.js", "twitter_video_downloader.js", "twitter_video_assist_client.js"]
+    "js": ["browser-polyfill.min.js", "jquery-3.3.1.min.js", "twitter_video_downloader.js", "twitter_video_assist_client.js"]
   }],
 
   "options_ui": {
-    "page": "options.html",
-    "browser_style": true
+    "page": "options.html"
   },
 
   "background": {
-    "scripts": ["twitter_video_downloader.js", "twitter_video_assist_server.js"]
+    "scripts": ["browser-polyfill.min.js", "twitter_video_downloader.js", "twitter_video_assist_server.js"]
   }
 }

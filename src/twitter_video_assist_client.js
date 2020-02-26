@@ -27,7 +27,7 @@ function initialize() {
         injectDownloadButton(this);
     });
     $("body").append(progressPopup);
-    $(".tva_ext_container").zIndex(getMaximumZindex() + 1);
+    $(".tva_ext_container").css("z-index", getMaximumZindex() + 1);
 }
 
 function injectAdditionalDownloadButtons(event) {
@@ -231,10 +231,14 @@ function processRequest(request) {
 function toggleReactProgressPopup(request) {
     if (!$(".tweet").length) {
         let spinner = $('.tva-react-spinner-wrapper')
-        if (spinner.length && request.hideSpinner) {
-            spinner.remove();
+        if (request.hideSpinner) {
+            if (spinner.length) {
+                spinner.remove();
+            }
         } else {
-            $('.css-1dbjc4n.r-16y2uox.r-1wbh5a2.r-1pi2tsx.r-1777fci h2:first-child ').append($(reactProgressPopup));
+            if (!spinner.length) {
+                $('.css-1dbjc4n.r-16y2uox.r-1wbh5a2.r-1pi2tsx.r-1777fci h2:first-child ').append($(reactProgressPopup));
+            }
         }
     } else {
         if (request.hideSpinner) {
@@ -246,11 +250,19 @@ function toggleReactProgressPopup(request) {
 }
 
 function getMaximumZindex() {
-    var maxZ = 0;
-    $('div').each(() => {
-        var indexCurrent = parseInt($(this).css("z-index"), 10);
-        if (indexCurrent > maxZ) {
-            maxZ = indexCurrent;
+    function intOrNaN(x) {
+        return /^\d+$/.test(x) ? +x : NaN
+    }
+
+    let maxZ = 0;
+    $('div').each((element, index) => {
+        try {
+            var indexCurrent = intOrNaN($(element).css("z-index"));
+            if (indexCurrent > maxZ) {
+                maxZ = indexCurrent;
+            }
+        } catch {
+
         }
     });
     return maxZ;
