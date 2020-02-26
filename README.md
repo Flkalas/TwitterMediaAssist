@@ -1,6 +1,6 @@
 # Twitter Video Assist For Firefox
 
-<https://addons.mozilla.org/en-US/firefox/addon/twitter-video-assist-ff>
+<https://addons.mozilla.org/en-US/firefox/addon/twitter-media-assist-ff>
 
 ## Chrome Version
 
