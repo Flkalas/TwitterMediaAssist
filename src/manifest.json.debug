@@ -4,6 +4,12 @@
   "description": "For your better Twitter media experience.",
   "version": "3.0.0",
 
+  "applications": {
+    "gecko": {
+      "id": "rectifying@gmail.com"
+    }
+  },
+
   "permissions": [
     "*://twitter.com/*",
     "*://*.twitter.com/*",

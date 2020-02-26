@@ -65,7 +65,7 @@ async function processComplexMp4Video(id, readableName) {
 }
 
 function processImageDownload(src, readableName) {
-    chrome.runtime.sendMessage({
+    browser.runtime.sendMessage({
         type: 'image',
         readableName: readableName,
         url: src
@@ -288,10 +288,10 @@ function downloadMp4Video(url, readableName) {
 }
 
 function downloadImage(url, readableName) {
-    chrome.storage.sync.get({
+    browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
-    }, (items) => {
+    }).then((items) => {
         const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g;
         const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g;
 
@@ -318,7 +318,7 @@ function downloadImage(url, readableName) {
             options.filename = `${filename}.${format}`
         }
 
-        chrome.downloads.download(options);
+        browser.downloads.download(options);
     });
 }
 
@@ -358,7 +358,7 @@ function findMaxBandwidthSource(string) {
 }
 
 function findBandwidth(sourcePlaylist) {
-    var stringsSplited = sourcePlaylist.split(",");
+    var stringsSplited = sourcePlaylist.split(/:|,/)
     for (var i in stringsSplited) {
         if (stringsSplited[i].search("BANDWIDTH") == 0) {
             return Number(stringsSplited[i].split("=")[1]);

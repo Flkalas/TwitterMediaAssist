@@ -1,7 +1,7 @@
-var workerSpace = {};
+let workerSpace = {};
 
-var CAPTURE_INTERVAL = 33;
-var PLAY_SPEED_RATE = 2.0;
+const CAPTURE_INTERVAL = 33;
+const PLAY_SPEED_RATE = 2.0;
 
 browser.runtime.onMessage.addListener(processRequest);
 
