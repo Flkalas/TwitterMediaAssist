@@ -7,21 +7,31 @@ browser.runtime.onMessage.addListener(processRequest);
 
 function processRequest(request) {
     switch (request.type) {
-        case 'gif':
-            convertGif(request.url, request.readableName);
-            break;
-
-        case 'tsVideo':
-            downloadTsVideo(request.data, request.filename, request.readableName);
-            break;
-
-        case 'mp4Video':
-            downloadMp4Video(request.url, request.readableName);
+        case 'video':
+            processVideoSource(request)
             break;
 
         case 'image':
             downloadImage(request.url, request.readableName)
             break;
+    }
+}
+
+function processVideoSource({
+    videoSource,
+    tweetId,
+    readerableFilename,
+    tweetSelector,
+    token
+}) {
+    if (videoSource.includes('blob')) {
+        if (!!tweetId) {
+            processBlobVideo(tweetId, readerableFilename, token);
+        }
+    } else if (videoSource.includes('ext_tw_video')) {
+        downloadMp4Video(videoSource, readerableFilename);
+    } else {
+        processGifVideo(videoSource, readerableFilename);
     }
 }
 

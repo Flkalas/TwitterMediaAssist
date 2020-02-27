@@ -149,19 +149,14 @@ function downloadVideoObject(tweet, tweetSelector, videoTag) {
         videoSource = tweet.find('source')[0].src
     }
 
-    if (videoSource.includes('blob')) {
-        const tweetId = getTweetId(tweet, tweetSelector);
-        if (!!tweetId) {
-            processBlobVideo(tweetId, readerableFilename(tweet, tweetSelector));
-        }
-    } else if (videoSource.includes('ext_tw_video')) {
-        browser.runtime.sendMessage({
-            type: 'mp4Video',
-            url: videoSource
-        });
-    } else {
-        processGifVideo(videoSource, readerableFilename(tweet, tweetSelector));
-    }
+    browser.runtime.sendMessage({
+        type: 'video',
+        videoSource: videoSource,
+        tweetId: getTweetId(tweet, tweetSelector),
+        readerableFilename: readerableFilename(tweet, tweetSelector),
+        tweetSelector: tweetSelector,
+        token: getCookie("ct0")
+    });
 }
 
 function downloadImageObject(tweet, tweetSelector, imageTags) {
