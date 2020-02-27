@@ -14,8 +14,10 @@
   ],
 
   "icons": {
+    "16": "icon_bitty.png",
     "48": "icon_small.png",
-    "96": "icon_medium.png"
+    "96": "icon_medium.png",
+    "128": "icon_large.png"
   },
 
   "content_scripts": [{
