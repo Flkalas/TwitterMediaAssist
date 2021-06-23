@@ -1,9 +1,18 @@
 let workerSpace = {};
+let readableNameList = {};
 
 const CAPTURE_INTERVAL = 33;
 const PLAY_SPEED_RATE = 2.0;
 
 browser.runtime.onMessage.addListener(processRequest);
+if(!!chrome.downloads.onDeterminingFilename) {
+    chrome.downloads.onDeterminingFilename.addListener(function(item, suggest) {
+        const filename = item.filename.split('.')[0]
+        const suggestFilename = readableNameList[filename] || item.filename
+        delete readableNameList[filename]
+        suggest({filename: suggestFilename, conflictAction: "uniquify"});
+    });
+}
 
 function processRequest(request) {
     switch (request.type) {
@@ -12,7 +21,7 @@ function processRequest(request) {
             break;
 
         case 'image':
-            downloadImage(request.url, request.readableName)
+            downloadImage(request.url, request.readableName, readableNameList)
             break;
     }
 }

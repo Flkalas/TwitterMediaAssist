@@ -160,9 +160,8 @@ function downloadVideoObject(tweet, tweetSelector, videoTag) {
 }
 
 function downloadImageObject(tweet, tweetSelector, imageTags) {
-    const uploadedImageQuery = /(https:\/\/pbs.twimg.com\/media\/.*)$/g;
+    // const uploadedImageQuery = /(https:\/\/pbs.twimg.com\/media\/.*)$/g;
     const nameAttributeQuery = /(name=)(.*)(\&?.*)/g;
-    let accumIndex = 1;
 
     imageTags.each((index, element) => {
         let src = $(element).attr('src')
@@ -175,8 +174,8 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
             } else {
                 src = src + '?name=orig';
             }
-            processImageDownload(src, readerableFilename(tweet, tweetSelector, accumIndex))
-            accumIndex++;
+            const index = getTweetIndex($(element).parents('a')[0].href)
+            processImageDownload(src, readerableFilename(tweet, tweetSelector, index))
         }
     })
 }
@@ -199,6 +198,15 @@ function getTweetOwner(tweet, selector) {
 function getTweetId(tweet, selector) {
     const re = /(?:https:\/\/[A-z.]*\/\w*\/status\/)(\d*)(?:\/?\w*)/g;
     return getTweetData(tweet, selector, re)
+}
+
+function getTweetIndex(statusUrl) {
+    const re = /(?:https:\/\/[A-z.]*\/\w*\/status\/)(?:\d*\/?\w*\/)(\d)/g;
+    const match = re.exec(statusUrl)
+    if (match) {
+        return match[1];
+    }
+    return 0;
 }
 
 function getTweetData(tweet, selector, re) {

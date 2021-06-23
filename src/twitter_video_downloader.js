@@ -271,7 +271,7 @@ function downloadMp4Video(url, readableName) {
     });
 }
 
-function downloadImage(url, readableName) {
+function downloadImage(url, readableName, readableNameList) {
     browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
@@ -288,18 +288,19 @@ function downloadImage(url, readableName) {
         }
 
         let filename = 'no_title'
+        const format = formatMatches[1]
 
         if (nameMatches.length) {
             filename = nameMatches[1]
         }
 
-        if (items.readableName) {
+        if (!!items.readableName) {
+            readableNameList[filename] = `${readableName}.${format}` 
             filename = readableName
         }
 
         if (formatMatches.length) {
-            const format = formatMatches[1]
-            options.filename = `${filename}.${format}`
+            options.filename = `${filename}.${format}` 
         }
 
         browser.downloads.download(options);
