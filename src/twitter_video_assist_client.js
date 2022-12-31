@@ -91,7 +91,7 @@ function injectReactDownloadButton(target) {
         return
     }
 
-    var icons = tweet.find('div[role="group"] div:nth-child(4)')
+    var icons = tweet.find('div[role="group"] div:nth-child(4),div:nth-child(5)').last()
     icons.after(icons.clone())
     icons.attr('class', icons.prev().attr('class'))
 
