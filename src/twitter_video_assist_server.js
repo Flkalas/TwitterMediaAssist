@@ -1,19 +1,20 @@
-let workerSpace = {};
+let workerSpace = {}
 
-const CAPTURE_INTERVAL = 33;
-const PLAY_SPEED_RATE = 2.0;
+const CAPTURE_INTERVAL = 33
+const PLAY_SPEED_RATE = 2.0
+const filenameRegex = /([\w,\s-.]+\.[A-Za-z]{2,4}$)/
 
-browser.runtime.onMessage.addListener(processRequest);
+browser.runtime.onMessage.addListener(processRequest)
 
 function processRequest(request) {
     switch (request.type) {
         case 'video':
             processVideoSource(request)
-            break;
+            break
 
         case 'image':
             downloadImage(request.url, request.readableName)
-            break;
+            break
     }
 }
 
@@ -26,37 +27,37 @@ function processVideoSource({
 }) {
     if (videoSource.includes('blob')) {
         if (!!tweetId) {
-            processBlobVideo(tweetId, readerableFilename, token);
+            processBlobVideo(tweetId, readerableFilename, token)
         }
     } else if (videoSource.includes('ext_tw_video')) {
-        downloadMp4Video(videoSource, readerableFilename);
+        downloadMp4Video(videoSource, readerableFilename)
     } else {
-        processGifVideo(videoSource, readerableFilename);
+        processGifVideo(videoSource, readerableFilename)
     }
 }
 
 function convertGif(url, readableFilename) {
-    sendSpinnerStateMessage(false);
+    sendSpinnerStateMessage(false)
 
-    var filename = url.substring(url.lastIndexOf('/') + 1).split(".")[0];
-    var worker = createWorker(filename, readableFilename);
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
-    var video = document.createElement('video');
+    var filename = url.substring(url.lastIndexOf('/') + 1).split(".")[0]
+    var worker = createWorker(filename, readableFilename)
+    var canvas = document.createElement('canvas')
+    var context = canvas.getContext('2d')
+    var video = document.createElement('video')
 
-    video.src = url;
-    video.crossOrigin = "use-credentials";
-    video.playbackRate = PLAY_SPEED_RATE;
-    video.preload = "auto";
-    video.innerHTML = '<source src="' + video.src + '" type="video/mp4 preload="metadata" />';
+    video.src = url
+    video.crossOrigin = "use-credentials"
+    video.playbackRate = PLAY_SPEED_RATE
+    video.preload = "auto"
+    video.innerHTML = '<source src="' + video.src + '" type="video/mp4 preload="metadata" />'
 
-    video.oncanplaythrough = processVideo(canvas, context, video, worker);
+    video.oncanplaythrough = processVideo(canvas, context, video, worker)
 }
 
 function createWorker(filename, readableFilename) {
-    workerSpace[filename] = new Worker('gif_converter.js');
-    workerSpace[filename].onmessage = processWorkerData(filename, readableFilename);
-    return workerSpace[filename];
+    workerSpace[filename] = new Worker('gif_converter.js')
+    workerSpace[filename].onmessage = processWorkerData(filename, readableFilename)
+    return workerSpace[filename]
 }
 
 function processWorkerData(filename, readableFilename) {
@@ -66,12 +67,12 @@ function processWorkerData(filename, readableFilename) {
             readableName: false
         }).then((items) => {
             var u8Array = new Uint8Array(atob(event.data).split("").map(function (c) {
-                return c.charCodeAt(0);
-            }));
+                return c.charCodeAt(0)
+            }))
             var blob = new Blob([u8Array], {
                 type: 'image/gif'
-            });
-            var url = URL.createObjectURL(blob);
+            })
+            var url = URL.createObjectURL(blob)
 
             let downloadFilename = filename
             if (items.readableName) {
@@ -82,11 +83,11 @@ function processWorkerData(filename, readableFilename) {
                 url: url,
                 saveAs: items.spcificPathName,
                 filename: downloadFilename + ".gif"
-            });
-            workerSpace[filename].terminate();
-            delete workerSpace[filename];
+            })
+            workerSpace[filename].terminate()
+            delete workerSpace[filename]
             if (numberOfWorker() == 0) {
-                sendSpinnerStateMessage(true);
+                sendSpinnerStateMessage(true)
             }
         })
     }
@@ -94,8 +95,8 @@ function processWorkerData(filename, readableFilename) {
 
 function processVideo(canvas, context, video, worker) {
     return () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
         captureVideo(context, video, worker)
     }
 }
@@ -105,27 +106,27 @@ async function captureVideo(context, video, worker) {
         delay: CAPTURE_INTERVAL * PLAY_SPEED_RATE,
         w: video.videoWidth,
         h: video.videoHeight
-    });
+    })
 
-    video.play();
+    video.play()
     while (!video.ended) {
-        draw(context, video, worker);
-        await sleep(CAPTURE_INTERVAL);
+        draw(context, video, worker)
+        await sleep(CAPTURE_INTERVAL)
     }
 
-    worker.postMessage({});
+    worker.postMessage({})
 }
 
 function draw(context, video, worker) {
-    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-    var imageData = context.getImageData(0, 0, video.videoWidth, video.videoHeight);
+    context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+    var imageData = context.getImageData(0, 0, video.videoWidth, video.videoHeight)
     worker.postMessage({
         frame: imageData
-    });
+    })
 }
 
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 function sendSpinnerStateMessage(hide) {
@@ -136,11 +137,11 @@ function sendSpinnerStateMessage(hide) {
         for (var i in tabs) {
             browser.tabs.sendMessage(tabs[i].id, {
                 hideSpinner: hide
-            });
+            })
         }
-    });
+    })
 }
 
 function numberOfWorker() {
-    return Object.keys(workerSpace).length;
+    return Object.keys(workerSpace).length
 }

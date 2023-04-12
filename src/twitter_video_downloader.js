@@ -1,16 +1,41 @@
+let readableNameList = {}
+const fileNameRegex = /([\w,\s-.]+\.[A-Za-z]{2,4}$)/
+
+function chromeDownloadRenamer(item, suggest) {
+    if (!item.byExtensionId && item.byExtensionId !== chrome.runtime.id) {
+        return
+    }
+
+    if (!Object.keys(readableNameList).length) {
+        return
+    }
+
+    let result = fileNameRegex.exec(item.filename)
+    const filename = result[1]
+    const suggestFilename = readableNameList[filename] || item.filename
+    const replacedFilePath = item.filename.replace(fileNameRegex, suggestFilename)
+    delete readableNameList[filename]
+
+    suggest({filename: replacedFilePath, conflictAction: "uniquify"})
+
+    if (!Object.keys(readableNameList).length) {
+        chrome.downloads.onDeterminingFilename.removeListener(chromeDownloadRenamer)
+    }
+}
+
 function processBlobVideo(id, readableName, token) {
     browser.storage.sync.get({
         isVideoSaveAsTS: true,
         isVideoSaveAsMP4: true,
     }).then((items) => {
         if (items.isVideoSaveAsTS) {
-            processComplexTsVideo(id, readableName, token);
+            processComplexTsVideo(id, readableName, token)
         }
 
         if (items.isVideoSaveAsMP4) {
-            processComplexMp4Video(id, readableName, token);
+            processComplexMp4Video(id, readableName, token)
         }
-    });
+    })
 }
 
 function processGifVideo(url, readableName) {
@@ -19,33 +44,33 @@ function processGifVideo(url, readableName) {
         isSaveMP4: true,
     }).then((items) => {
         if (items.isConvertGIF) {
-            convertGif(url, readableName);
+            convertGif(url, readableName)
         }
 
         if (items.isSaveMP4) {
-            downloadMp4Video(url, readableName);
+            downloadMp4Video(url, readableName)
         }
-    });
+    })
 }
 
 async function processComplexTsVideo(id, readableName, token) {
-    var jsonUrl = "https://api.twitter.com/1.1/videos/tweet/config/";
-    jsonUrl += id + ".json";
+    var jsonUrl = "https://api.twitter.com/1.1/videos/tweet/config/"
+    jsonUrl += id + ".json"
 
-    var playlistUrl = await getPlaylistUrl(jsonUrl, token);
-    var filename = playlistUrl.substring(playlistUrl.lastIndexOf('/') + 1).split(".")[0];
-    var palylist = await getMaximumBandwidthPlaylist(playlistUrl);
-    var videoUrls = await getVideoFileUrls(palylist);
-    var videoData = await accumTsFragment(videoUrls);
+    var playlistUrl = await getPlaylistUrl(jsonUrl, token)
+    var filename = playlistUrl.substring(playlistUrl.lastIndexOf('/') + 1).split(".")[0]
+    var palylist = await getMaximumBandwidthPlaylist(playlistUrl)
+    var videoUrls = await getVideoFileUrls(palylist)
+    var videoData = await accumTsFragment(videoUrls)
 
-    downloadTsVideo(videoData, filename, readableName);
+    downloadTsVideo(videoData, filename, readableName)
 }
 
 async function processComplexMp4Video(id, readableName, token) {
-    var pageUrl = "https://api.twitter.com/1.1/statuses/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&trim_user=false&include_ext_media_color=true&id=" + id;
-    var mp4Url = await getMp4Url(pageUrl, token);
+    var pageUrl = "https://api.twitter.com/1.1/statuses/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&trim_user=false&include_ext_media_color=true&id=" + id
+    var mp4Url = await getMp4Url(pageUrl, token)
 
-    downloadMp4Video(mp4Url, readableName);
+    downloadMp4Video(mp4Url, readableName)
 }
 
 function processImageDownload(src, readableName) {
@@ -53,7 +78,7 @@ function processImageDownload(src, readableName) {
         type: 'image',
         readableName: readableName,
         url: src
-    });
+    })
 }
 
 function getMp4Url(url, token) {
@@ -68,7 +93,7 @@ function getMp4Url(url, token) {
             },
             credentials: 'include',
             referrer: 'https://mobile.twitter.com'
-        };
+        }
 
         fetch(url, init)
             .then((response) => {
@@ -81,21 +106,21 @@ function getMp4Url(url, token) {
                         if (mp4Variants.length) {
                             url = mp4Variants[0].url
                         }
-                        resolve(url);
+                        resolve(url)
                     })
                 } else {
                     reject({
                         status: response.status,
                         statusText: response.statusText
-                    });
+                    })
                 }
             })
             .catch((err) => {
                 reject({
                     error: err
-                });
-            });
-    });
+                })
+            })
+    })
 }
 
 function getPlaylistUrl(url, token) {
@@ -112,28 +137,28 @@ function getPlaylistUrl(url, token) {
             },
             credentials: 'include',
             referrer: 'https://twitter.com'
-        };
+        }
 
         fetch(url, init)
             .then((response) => {
                 if (response.status == 200) {
                     response.json().then((data) => {
-                        var platlistUrl = data["track"]["playbackUrl"];
-                        resolve(platlistUrl);
-                    });
+                        var platlistUrl = data["track"]["playbackUrl"]
+                        resolve(platlistUrl)
+                    })
                 } else {
                     reject({
                         status: response.status,
                         statusText: response.statusText
-                    });
+                    })
                 }
             })
             .catch((err) => {
                 reject({
                     error: err
-                });
-            });
-    });
+                })
+            })
+    })
 }
 
 function getMaximumBandwidthPlaylist(url) {
@@ -143,22 +168,22 @@ function getMaximumBandwidthPlaylist(url) {
                 (response) => {
                     if (response.status == 200) {
                         response.text().then((text) => {
-                            resolve(findMaxBandwidthSource(text));
+                            resolve(findMaxBandwidthSource(text))
                         })
                     } else {
                         reject({
                             status: response.status,
                             statusText: response.statusText
-                        });
+                        })
                     }
                 }
             )
             .catch((err) => {
                 reject({
                     error: err
-                });
-            });
-    });
+                })
+            })
+    })
 }
 
 function getVideoFileUrls(url) {
@@ -168,34 +193,34 @@ function getVideoFileUrls(url) {
                 (response) => {
                     if (response.status == 200) {
                         response.text().then((text) => {
-                            resolve(parseVideoUrls(text));
+                            resolve(parseVideoUrls(text))
                         })
                     } else {
                         reject({
                             status: response.status,
                             statusText: response.statusText
-                        });
+                        })
                     }
                 }
             )
             .catch((err) => {
                 reject({
                     error: err
-                });
-            });
-    });
+                })
+            })
+    })
 
 }
 
 async function accumTsFragment(videoUrls) {
-    var videoBuffer = new Uint8Array(0);
+    var videoBuffer = new Uint8Array(0)
 
     for (var i in videoUrls) {
-        var fragment = await downloadTsFragment(videoUrls[i]);
-        videoBuffer = mergeFragment(videoBuffer, fragment);
+        var fragment = await downloadTsFragment(videoUrls[i])
+        videoBuffer = mergeFragment(videoBuffer, fragment)
     }
 
-    return videoBuffer;
+    return videoBuffer
 }
 
 function downloadTsFragment(urlTs) {
@@ -203,23 +228,23 @@ function downloadTsFragment(urlTs) {
         fetch(urlTs)
             .then((response) => response.arrayBuffer())
             .then((buffer) => {
-                resolve(buffer);
+                resolve(buffer)
             })
             .catch((err) => {
                 reject({
                     error: err
-                });
-            });
-    });
+                })
+            })
+    })
 }
 
 function mergeFragment(buffer, fragment) {
-    var now = new Uint8Array(fragment);
-    var prev = new Uint8Array(buffer);
+    var now = new Uint8Array(fragment)
+    var prev = new Uint8Array(buffer)
 
-    var merged = new Uint8Array(now.length + prev.length);
-    merged.set(prev);
-    merged.set(now, prev.length);
+    var merged = new Uint8Array(now.length + prev.length)
+    merged.set(prev)
+    merged.set(now, prev.length)
 
     return merged
 }
@@ -231,8 +256,8 @@ function downloadTsVideo(data, tsFilename, readableName) {
     }).then((items) => {
         var blob = new Blob([data], {
             type: 'video/mp2t'
-        });
-        var url = URL.createObjectURL(blob);
+        })
+        var url = URL.createObjectURL(blob)
 
         let options = {
             url: url,
@@ -244,8 +269,8 @@ function downloadTsVideo(data, tsFilename, readableName) {
             options.filename = readableName + '.ts'
         }
 
-        browser.downloads.download(options);
-    });
+        browser.downloads.download(options)
+    })
 }
 
 function fileExtension(url) {
@@ -267,8 +292,8 @@ function downloadMp4Video(url, readableName) {
             options.filename = readableName + '.' + fileExtension(url)
         }
 
-        browser.downloads.download(options);
-    });
+        browser.downloads.download(options)
+    })
 }
 
 function downloadImage(url, readableName) {
@@ -276,8 +301,8 @@ function downloadImage(url, readableName) {
         spcificPathName: false,
         readableName: false
     }).then((items) => {
-        const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g;
-        const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g;
+        const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g
+        const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g
 
         const nameMatches = uploadedImageQuery.exec(url)
         const formatMatches = extensionAttributeQuery.exec(url)
@@ -288,86 +313,102 @@ function downloadImage(url, readableName) {
         }
 
         let filename = 'no_title'
+        const format = formatMatches[1]
 
         if (nameMatches.length) {
             filename = nameMatches[1]
         }
 
-        if (items.readableName) {
+        if (!!items.readableName) {
+            if (!!chrome.downloads.onDeterminingFilename) {
+                readableNameList[`${filename}.${format}`] = `${readableName}.${format}`
+
+                if (!!chrome.downloads.onDeterminingFilename && !isRenamerActivated()) {
+                    chrome.downloads.onDeterminingFilename.addListener(chromeDownloadRenamer)
+                }
+            }
             filename = readableName
         }
 
         if (formatMatches.length) {
-            const format = formatMatches[1]
             options.filename = `${filename}.${format}`
         }
 
-        browser.downloads.download(options);
-    });
+        browser.downloads.download(options)
+            .then((_downloadItem) => {
+                if (!Object.keys(readableNameList).length) {
+                    chrome.downloads.onDeterminingFilename.removeListener(chromeDownloadRenamer)
+                }
+            })
+    })
 }
 
 function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
+    var name = cname + "="
+    var decodedCookie = decodeURIComponent(document.cookie)
+    var ca = decodedCookie.split(';')
     for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
+        var c = ca[i]
         while (c.charAt(0) == ' ') {
-            c = c.substring(1);
+            c = c.substring(1)
         }
         if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
+            return c.substring(name.length, c.length)
         }
     }
-    return "";
+    return ""
 }
 
 function findMaxBandwidthSource(string) {
-    var stringsSplited = string.split("#");
-    var arrBandwidth = [];
+    var stringsSplited = string.split("#")
+    var arrBandwidth = []
     for (var i in stringsSplited) {
-        var bandwidth = findBandwidth(stringsSplited[i]);
+        var bandwidth = findBandwidth(stringsSplited[i])
         if (bandwidth > 0) {
-            arrBandwidth.push(bandwidth);
+            arrBandwidth.push(bandwidth)
         }
     }
 
-    var bandwidthMax = Math.max.apply(null, arrBandwidth);
+    var bandwidthMax = Math.max.apply(null, arrBandwidth)
     for (var i in stringsSplited) {
         if (bandwidthMax == findBandwidth(stringsSplited[i])) {
-            return findPlaylistSource(stringsSplited[i]);
+            return findPlaylistSource(stringsSplited[i])
         }
     }
-    return "";
+    return ""
 }
 
 function findBandwidth(sourcePlaylist) {
     var stringsSplited = sourcePlaylist.split(/:|,/)
     for (var i in stringsSplited) {
         if (stringsSplited[i].search("BANDWIDTH") == 0) {
-            return Number(stringsSplited[i].split("=")[1]);
+            return Number(stringsSplited[i].split("=")[1])
         }
     }
-    return -1;
+    return -1
 }
 
 function findPlaylistSource(sourcePlaylist) {
-    var stringsSplited = sourcePlaylist.split("\n");
+    var stringsSplited = sourcePlaylist.split("\n")
     for (var i in stringsSplited) {
         if (((stringsSplited[i].search("ext_tw_video") > 0) || (stringsSplited[i].search("amplify_video") > 0)) && (stringsSplited[i].search("m3u8") > 0)) {
-            return "https://video.twimg.com" + stringsSplited[i];
+            return "https://video.twimg.com" + stringsSplited[i]
         }
     }
-    return "";
+    return ""
 }
 
 function parseVideoUrls(string) {
-    var stringsSplited = string.split("#");
-    var arrPlaylist = [];
+    var stringsSplited = string.split("#")
+    var arrPlaylist = []
     for (var i in stringsSplited) {
         if ((stringsSplited[i].search("ext_tw_video") > 0) || (stringsSplited[i].search("amplify_video") > 0)) {
-            arrPlaylist.push("https://video.twimg.com" + stringsSplited[i].split("\n")[1]);
+            arrPlaylist.push("https://video.twimg.com" + stringsSplited[i].split("\n")[1])
         }
     }
-    return arrPlaylist;
+    return arrPlaylist
+}
+
+function isRenamerActivated() {
+    return chrome.downloads.onDeterminingFilename.hasListener(chromeDownloadRenamer)
 }

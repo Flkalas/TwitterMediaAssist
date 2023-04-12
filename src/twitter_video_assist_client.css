@@ -24,6 +24,7 @@
 	from {
 		opacity: 0;
 	}
+
 	to {
 		opacity: 1;
 	}
@@ -102,4 +103,14 @@
 	border-bottom-color: #FFFFFF;
 	animation: spinner .6s linear infinite;
 	-webkit-animation: spinner .6s linear infinite;
+}
+
+.tva-download-icon:hover .r-13gxpu9 {
+	color: rgba(29,161,242,1.00);
+}
+.tva-download-icon:hover .r-1niwhzg {
+	background-color: rgba(29,155,240,0.1);
+}
+.tva-download-icon:active .r-1niwhzg {
+	background-color: rgba(29,155,240,0.2);
 }
