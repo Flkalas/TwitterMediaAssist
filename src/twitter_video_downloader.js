@@ -99,7 +99,7 @@ function getMp4Url(url, token) {
             .then((response) => {
                 if (response.status == 200) {
                     response.json().then((json) => {
-                        let mp4Variants = json.extended_entities.media[0].video_info.variants.filter(variant => variant.content_type === 'video/mp4')
+                        let mp4Variants = (json.extended_entities || json.quoted_status.extended_entities).media[0].video_info.variants.filter(variant => variant.content_type === 'video/mp4')
                         mp4Variants = mp4Variants.sort((a, b) => (b.bitrate - a.bitrate))
 
                         let url = ''
