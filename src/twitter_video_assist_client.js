@@ -163,20 +163,27 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
     // const uploadedImageQuery = /(https:\/\/pbs.twimg.com\/media\/.*)$/g;
     const nameAttributeQuery = /(name=)(.*)(\&?.*)/g
 
+    imageTags = imageTags.filter((index, element) => {
+        return $(element).attr('src').includes('https://pbs.twimg.com/media');
+    });
+
+    if (imageTags.length > 3) {
+        var temp = imageTags[1];
+        imageTags[1] = imageTags[2];
+        imageTags[2] = temp;
+    }
+
     imageTags.each((index, element) => {
         let src = $(element).attr('src')
-        const isUploadedImage = src.includes('https://pbs.twimg.com/media')
-        if (isUploadedImage) {
-            if (nameAttributeQuery.test(src)) {
-                src = src.replace(nameAttributeQuery, '$1orig$3')
-            } else if (src.includes('=')) {
-                src = src + '&name=orig'
-            } else {
-                src = src + '?name=orig'
-            }
-            const index = getTweetIndex($(element).parents('a')[0].href)
-            processImageDownload(src, readerableFilename(tweet, tweetSelector, index))
+        if (nameAttributeQuery.test(src)) {
+            src = src.replace(nameAttributeQuery, '$1orig$3')
+        } else if (src.includes('=')) {
+            src = src + '&name=orig';
+        } else {
+            src = src + '?name=orig';
         }
+        processImageDownload(src, readerableFilename(tweet, tweetSelector, accumIndex))
+        accumIndex++;
     })
 }
 
