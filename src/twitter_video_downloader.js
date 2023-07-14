@@ -16,7 +16,7 @@ function chromeDownloadRenamer(item, suggest) {
     const replacedFilePath = item.filename.replace(fileNameRegex, suggestFilename)
     delete readableNameList[filename]
 
-    suggest({filename: replacedFilePath, conflictAction: "uniquify"})
+    suggest({ filename: replacedFilePath, conflictAction: "uniquify" })
 
     if (!Object.keys(readableNameList).length) {
         chrome.downloads.onDeterminingFilename.removeListener(chromeDownloadRenamer)
@@ -64,6 +64,65 @@ async function processComplexTsVideo(id, readableName, token) {
     var videoData = await accumTsFragment(videoUrls)
 
     downloadTsVideo(videoData, filename, readableName)
+}
+
+async function extractGraphQlMp4Video(id, token) {
+    try {
+        const jsonResponse = await archiveTweetDetailJson(id, token)
+        const tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
+
+        let videoSources = null
+        if (tweetResults.hasOwnProperty('tweet')) {
+            videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
+        } else {
+            videoSources = tweetResults["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
+
+        }
+        videoSources.sort(sortByBitrate)
+
+        return videoSources[0]['url']
+    } catch (e) {
+        if (e instanceof TypeError) {
+            return null
+        } else {
+            throw e;
+        }
+    }
+}
+
+async function archiveTweetDetailJson(id, token) {
+    let tweetDetailUrl = `https://twitter.com/i/api/graphql/-Ls3CrSQNo2fRKH6i6Na1A/TweetDetail?variables=%7B%22focalTweetId%22%3A%22${id}%22%2C%22with_rux_injections%22%3Afalse%2C%22includePromotedContent%22%3Atrue%2C%22withCommunity%22%3Atrue%2C%22withQuickPromoteEligibilityTweetFields%22%3Atrue%2C%22withBirdwatchNotes%22%3Atrue%2C%22withVoice%22%3Atrue%2C%22withV2Timeline%22%3Atrue%7D&features=%7B%22rweb_lists_timeline_redesign_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Afalse%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_media_download_video_enabled%22%3Afalse%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%2C%22withArticleRichContentState%22%3Afalse%7D`
+
+    const response = await fetch(tweetDetailUrl, {
+        "credentials": "include",
+        "headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/115.0",
+            "Accept": "*/*",
+            "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3",
+            "content-type": "application/json",
+            "x-twitter-auth-type": "OAuth2Session",
+            "x-csrf-token": token,
+            "x-twitter-client-language": "ko",
+            "x-twitter-active-user": "yes",
+            "X-Client-Transaction-Id": "NzRMqdd3tuyaOaNVwIUt8B2lkDXpa9LFoDd8b4qm19wGAPlc5MmznuiuWvZwPq1lzUQZYgAE+nthOir1ViJ1D9Sjz59h",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
+            "authorization": "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA"
+        },
+        "referrer": "https://twitter.com/Sanghai83780Kim/status/1679624508293140480",
+        "method": "GET",
+        "mode": "cors"
+    });
+
+    return await response.json()
+}
+
+const sortByBitrate = (a, b) => {
+    const bitrateA = a.bitrate || 0;
+    const bitrateB = b.bitrate || 0;
+
+    return bitrateB - bitrateA;
 }
 
 async function processComplexMp4Video(id, readableName, token) {
