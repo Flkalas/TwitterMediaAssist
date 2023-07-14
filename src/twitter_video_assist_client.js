@@ -1,7 +1,6 @@
 const downloadButton = '<div class="ProfileTweet-action tva_download_action"><button class="ProfileTweet-actionButton u-textUserColorHover js-actionButton tva_js_download" type="button"><div class="IconContainer js-tooltip" data-original-title="Video Download"><span class="Icon Icon--medium tva_download_icon"></span><span class="u-hiddenVisually"></span></div></button></div>'
 const progressPopup = '<div class="stream-item tva_ext_container tva_hide" aria-live="polite"><div class="tva_ext_spinner"><div class="tva_spinner"></div></div><div class="tva_ext_text_box"><p class="tva_ext_text">GIF Converting...</p></div></div>'
-
-const downloadIcon = '<g xmlns="http://www.w3.org/2000/svg"><g transform="rotate(-180 11.999625205993652,9.00012493133545)"><path d="M12 2.59l5.7 5.7-1.41 1.42L13 6.41V16h-2V6.41l-3.3 3.3-1.41-1.42L12"/></g><g><path d="M12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z"/></g></g>'
+const downloadIcon = '<g xmlns="http://www.w3.org/2000/svg"><path d="M 21 15 L 20.98 18.51 C 20.98 19.89 19.86 21 18.48 21 L 5.5 21 C 4.11 21 3 19.88 3 18.5 L 3 15 L 5 15 L 5 18.5 C 5 18.78 5.22 19 5.5 19 L 18.48 19 C 18.76 19 18.98 18.78 18.98 18.5 L 19 15 L 21 15 Z M 12 16 L 17.7 10.3 L 16.29 8.88 L 13 12.18 L 13 2.59 L 11 2.59 L 11 12.18 L 7.7 8.88 L 6.29 10.3 L 12 16 Z" style=""/></g>'
 const reactProgressPopup = '<div class="tva-react-spinner-wrapper"><div class="tva_spinner tva_spinner_old"></div><span class="css-901oao css-16my406 r-1qd0xha r-ad9z0x r-bcqeeo r-qvutc0">GIFing...</span></div>'
 
 const modalCalss = 'div[aria-modal="true"]'
@@ -20,7 +19,12 @@ $(document).on({
         $(e.currentTarget).find('svg').prev().parent().parent().removeClass('r-13gxpu9')
     }
 }, ".tva-download-icon")
+
+let hideViewCount = false
 browser.runtime.onMessage.addListener(processRequest)
+browser.storage.sync.get({ hideViewCount: true }).then((items) => {
+    hideViewCount = items.hideViewCount
+})
 
 function initialize() {
     $(".tweet").each(function () {
@@ -54,6 +58,10 @@ function hasMedia(element) {
 }
 
 function analysisDom(content) {
+    if (hideViewCount) {
+        removeStatIcon(content)
+    }
+
     if (hasMedia(content)) {
         injectReactDownloadButton(content)
     }
@@ -78,6 +86,23 @@ function injectReactModalDownloadButton(modal) {
     icon.attr('class', icon.prev().attr('class'))
 }
 
+function removeStatIcon(content) {
+    const tweet = $(content).closest('article')
+    const iconsGroups = tweet.find('div[role="group"]')
+    const dateStatLabel = tweet.find('div.css-1dbjc4n.r-1d09ksm.r-1471scf.r-18u37iz.r-1wbh5a2')
+
+    for (const groupElement of iconsGroups) {
+        const group = $(groupElement)
+        const statIcon = group.find('path[d="M8.75 21V3h2v18h-2zM18 21V8.5h2V21h-2zM4 21l.004-10h2L6 21H4zm9.248 0v-7h2v7h-2z"]')
+        statIcon.parents('div.css-1dbjc4n.r-18u37iz.r-1h0z5md').remove()
+    }
+
+    if (dateStatLabel.length > 0) {
+        dateStatLabel.children('div.r-1q142lx.r-s1qlax').remove()
+        dateStatLabel.children('div.r-1nao33i').remove()
+    }
+}
+
 function injectReactDownloadButton(target) {
     var tweet = $(target).closest('article')
 
@@ -91,11 +116,11 @@ function injectReactDownloadButton(target) {
         return
     }
 
-    var icons = tweet.find('div[role="group"] div:nth-child(4),div:nth-child(5)').last()
-    icons.after(icons.clone())
-    icons.attr('class', icons.prev().attr('class'))
+    const iconsGroups = tweet.find('div[role="group"]')
+    const lastIcon = $(iconsGroups[iconsGroups.length - 1]).children('div:last-child')
+    lastIcon.after(lastIcon.clone())
 
-    var download = icons.next()
+    var download = lastIcon.next()
     download.addClass('tva-download-icon')
     download.children('div:first-child').data('testid', 'download')
     download.children('div:first-child').attr('aria-label', 'Media Download')
@@ -143,17 +168,22 @@ function downloadMediaObject(event) {
     }
 }
 
-function downloadVideoObject(tweet, tweetSelector, videoTag) {
+async function downloadVideoObject(tweet, tweetSelector, videoTag) {
     var videoSource = videoTag.src
     if (!videoSource) {
         videoSource = tweet.find('source')[0].src
     }
 
+    let url = null
+    if (videoSource.includes('blob')) {
+        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"))
+    }
+
     browser.runtime.sendMessage({
         type: 'video',
-        videoSource: videoSource,
+        videoSource: url || videoSource,
         tweetId: getTweetId(tweet, tweetSelector),
-        readerableFilename: readerableFilename(tweet, tweetSelector),
+        readerableFilename: generateReaderableFilename(tweet, tweetSelector),
         tweetSelector: tweetSelector,
         token: getCookie("ct0")
     })
@@ -173,6 +203,7 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
         imageTags[2] = temp;
     }
 
+    let accumIndex = 1
     imageTags.each((index, element) => {
         let src = $(element).attr('src')
         if (nameAttributeQuery.test(src)) {
@@ -182,12 +213,12 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
         } else {
             src = src + '?name=orig';
         }
-        processImageDownload(src, readerableFilename(tweet, tweetSelector, accumIndex))
+        processImageDownload(src, generateReaderableFilename(tweet, tweetSelector, accumIndex))
         accumIndex++;
     })
 }
 
-function readerableFilename(tweet, selector, index) {
+function generateReaderableFilename(tweet, selector, index) {
     if (selector === modalCalss) {
         return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}-${indexOfImage(selector) + 1}`
     } else if (!!index) {
