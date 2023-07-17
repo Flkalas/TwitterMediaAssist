@@ -340,7 +340,7 @@ function getTweetData(tweet, selector, re) {
     } else if (selector === 'article') {
         for (const element of tweet.find('a').toArray()) {
             const match = re.exec(element.href)
-            if (match) {
+            if (match && !match[0].includes('/i/')) {  // excludes the '.../i/status/1234567890' format, get the actual tweet id
                 return match[1]
             }
         }
