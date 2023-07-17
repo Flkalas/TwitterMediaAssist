@@ -159,14 +159,14 @@ function getVideoIndexes(tweet){
         grid_view = grid_view.find('[style*="padding-bottom"]')
         grid_view = grid_view.next()
         grid_view = grid_view.children().first()
-
+        // todo simply the search on each grid- maybe just .find('video')
         try{
             let upper_grids = grid_view.children().first()
 
             try{
                 let first_grid = upper_grids.children().first()
                 console.log('1st')
-                if (first_grid.find('[data-testid="videoComponent"]').length > 0){
+                if (first_grid.find('video').length > 0){
                     list.push(0)
                 }
                 console.log(list)
@@ -174,7 +174,7 @@ function getVideoIndexes(tweet){
                 try{
                     let second_grid = upper_grids.children().eq(1)  // get second grid
                     console.log('2nd')
-                    if (second_grid.find('[data-testid="videoComponent"]').length > 0){
+                    if (second_grid.find('video').length > 0){
                         list.push(1)
                     }
                     console.log(list)
@@ -186,14 +186,8 @@ function getVideoIndexes(tweet){
                             let third_grid = lower_grids.children().first()
                             console.log('3rd')
                             // console.log(third_grid.html())
-                            if (third_grid.find('[data-testid="videoComponent"]').length > 0){
-                                if (
-                                    // lower_grids.length === second_grid.length &&
-                                    // lower_grids.is(function(index) {
-                                    //     return $(this).is(second_grid.eq(index));
-                                    // })
-                                    second_grid.length === 0
-                                ) {
+                            if (third_grid.find('video').length > 0){
+                                if (second_grid.length === 0) {  // second grid is empty but video found in 3rd grid
                                     console.log("lower half contains the second grid");
                                     // then the 3rd grid is actually 2nd grid, push index 1
                                     list.push(1)
@@ -207,7 +201,7 @@ function getVideoIndexes(tweet){
                                 let fourth_grid = lower_grids.children().eq(1)  // get second grid of the second half
                                 console.log('4th')
                                 // console.log(fourth_grid.html())
-                                if (fourth_grid.find('[data-testid="videoComponent"]').length > 0){
+                                if (fourth_grid.find('video').length > 0){
                                     list.push(3)
                                 }
                                 console.log(list)
@@ -237,11 +231,12 @@ function downloadMediaObject(event) {
     console.log('indexes = [' + videoIndexes + ']')
 
     if (videoTags.length) {
-        videoIndexes.forEach(function(videoIndex, nameIndex ) {
+        videoIndexes.forEach(function(videoIndex, loopIndex ) {
+            videoTag = videoTags[loopIndex]
             if (videoIndexes.length === 1) {  // only 1 video
-                nameIndex = -1
+                loopIndex = -1
             }
-            downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex + 1, videoIndex)
+            downloadVideoObject(tweet, tweetSelector, videoTag, loopIndex + 1, videoIndex)
         })
     }
 
@@ -262,8 +257,14 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex, vi
         let reply_n = tweet.parents('[data-testid="cellInnerDiv"]').index()  // get the index of tweet (not 0 if reply)
         console.log('reply_n = ' + reply_n + ' ---- (this number might be wrong)')
 
-        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector))
-        console.log('extracted video url = ' + url)
+        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector)).then(url => {
+            // Handle the successful result here
+            console.log('extracted video url = ' + url)
+        }).catch(error => {
+                // Handle the error here
+                console.error("Error in extractURL promise:", error);
+                return null
+            })
     }
 
     browser.runtime.sendMessage({

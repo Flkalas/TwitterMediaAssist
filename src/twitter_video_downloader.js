@@ -83,6 +83,7 @@ async function extractGraphQlMp4Video(id, token, reply_n, videoIndex, owner) {
     try {
         const jsonResponse = await archiveTweetDetailJson(id, token)
         let tweetResults = null
+        // todo what if i just make it to try every floor 0-100? since 0 not work, and entry_n not work, then the only one works is the right one?
         try {  // try entry: 0
             console.log('try 0')
             tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
