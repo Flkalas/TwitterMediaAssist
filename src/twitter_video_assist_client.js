@@ -159,7 +159,7 @@ function getVideoIndexes(tweet){
         grid_view = grid_view.find('[style*="padding-bottom"]')
         grid_view = grid_view.next()
         grid_view = grid_view.children().first()
-        // todo simply the search on each grid- maybe just .find('video')
+
         try{
             let upper_grids = grid_view.children().first()
 
@@ -256,15 +256,13 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex, vi
         // console.log(tweet.parents('[data-testid="cellInnerDiv"]').html())
         let reply_n = tweet.parents('[data-testid="cellInnerDiv"]').index()  // get the index of tweet (not 0 if reply)
         console.log('reply_n = ' + reply_n + ' ---- (this number might be wrong)')
-
-        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector)).then(url => {
-            // Handle the successful result here
+        try {
+            url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector))
             console.log('extracted video url = ' + url)
-        }).catch(error => {
-                // Handle the error here
-                console.error("Error in extractURL promise:", error);
-                return null
-            })
+        } catch (e) {
+            // Handle the error here
+            console.log("Error in extractURL promise:", e);
+        }
     }
 
     browser.runtime.sendMessage({

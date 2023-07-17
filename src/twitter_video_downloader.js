@@ -84,18 +84,30 @@ async function extractGraphQlMp4Video(id, token, reply_n, videoIndex, owner) {
         const jsonResponse = await archiveTweetDetailJson(id, token)
         let tweetResults = null
         // todo what if i just make it to try every floor 0-100? since 0 not work, and entry_n not work, then the only one works is the right one?
-        try {  // try entry: 0
-            console.log('try 0')
-            tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
-            return extractUrlFromVideoSources(tweetResults, videoIndex)
-        } catch (e) {  // try entry: reply_n
-            console.log('0 not working, try reply_n')
-            tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][reply_n]["content"]["itemContent"]["tweet_results"]["result"]
-            return extractUrlFromVideoSources(tweetResults, videoIndex)
+        // try {  // try entry: 0
+        //     console.log('try 0')
+        //     tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
+        //     return extractUrlFromVideoSources(tweetResults, videoIndex)
+        // } catch (e) {  // try entry: reply_n
+        //     console.log('0 not working, try reply_n')
+        //     tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][reply_n]["content"]["itemContent"]["tweet_results"]["result"]
+        //     return extractUrlFromVideoSources(tweetResults, videoIndex)
+        // }
+        for (let i = 0; i <= 100; i++) {
+            try {
+                console.log('trying - ' + i)
+                const jsonResponse = await archiveTweetDetailJson(id, token);
+                let tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][i]["content"]["itemContent"]["tweet_results"]["result"];
+                const videoUrl = extractUrlFromVideoSources(tweetResults, videoIndex);
+                return videoUrl;
+            } catch (e) {
+                // If an error occurs, continue to the next entry
+            }
         }
+        throw TypeError  // 100 tries exhausted, throw error
     } catch (e) {  // catches error from trying entry: reply_n
         if (e instanceof TypeError) {
-            console.log('>>> both 0 and reply_n not working - timeline error - try getting the video from its own page')
+            // console.log('>>> both 0 and reply_n not working - timeline error - try getting the video from its own page')
             window.open(`https://twitter.com/${owner}/status/${id}`)
             throw e
             // return null
