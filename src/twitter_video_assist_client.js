@@ -151,6 +151,77 @@ function indexOfImage(selector) {
     return Number(splited[splited.length - 1]) - 1
 }
 
+function getVideoIndexes(tweet){
+    var list = []
+
+    try{
+        let grid_view = tweet.find('[aria-labelledby]')
+        grid_view = grid_view.find('[style*="padding-bottom"]')
+        grid_view = grid_view.next()
+        grid_view = grid_view.children().first()
+
+        try{
+            let upper_grids = grid_view.children().first()
+
+            try{
+                let first_grid = upper_grids.children().first()
+                console.log('1st')
+                if (first_grid.find('[data-testid="videoComponent"]').length > 0){
+                    list.push(0)
+                }
+                console.log(list)
+
+                try{
+                    let second_grid = upper_grids.children().eq(1)  // get second grid
+                    console.log('2nd')
+                    if (second_grid.find('[data-testid="videoComponent"]').length > 0){
+                        list.push(1)
+                    }
+                    console.log(list)
+
+                    try{
+                        let lower_grids = grid_view.children().eq(1)  // get second half
+
+                        try{
+                            let third_grid = lower_grids.children().first()
+                            console.log('3rd')
+                            // console.log(third_grid.html())
+                            if (third_grid.find('[data-testid="videoComponent"]').length > 0){
+                                if (
+                                    // lower_grids.length === second_grid.length &&
+                                    // lower_grids.is(function(index) {
+                                    //     return $(this).is(second_grid.eq(index));
+                                    // })
+                                    second_grid.length === 0
+                                ) {
+                                    console.log("lower half contains the second grid");
+                                    // then the 3rd grid is actually 2nd grid, push index 1
+                                    list.push(1)
+                                } else {
+                                    list.push(2)
+                                }
+                            }
+                            console.log(list)
+
+                            try{
+                                let fourth_grid = lower_grids.children().eq(1)  // get second grid of the second half
+                                console.log('4th')
+                                // console.log(fourth_grid.html())
+                                if (fourth_grid.find('[data-testid="videoComponent"]').length > 0){
+                                    list.push(3)
+                                }
+                                console.log(list)
+                            } catch (e) {return list}
+                        } catch (e) {return list}
+                    } catch (e) {return list}
+                } catch (e) {return list}
+            } catch (e) {return list}
+        } catch (e) {return list}
+    } catch (e) {return list}
+
+    return list
+}
+
 function downloadMediaObject(event) {
     const tweetSelector = event.data
     const tweet = $(event.currentTarget).closest(tweetSelector)
@@ -161,14 +232,25 @@ function downloadMediaObject(event) {
         imageTags = $(imageTags[indexOfImage(tweetSelector)])
     }
 
-    if (videoTag) {
-        downloadVideoObject(tweet, tweetSelector, videoTag)
-    } else if (imageTags.length) {
+    var videoTags = tweet.find('video')
+    var videoIndexes = getVideoIndexes(tweet)
+    console.log('indexes = [' + videoIndexes + ']')
+
+    if (videoTags.length) {
+        videoIndexes.forEach(function(videoIndex, nameIndex ) {
+            if (videoIndexes.length === 1) {  // only 1 video
+                nameIndex = -1
+            }
+            downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex + 1, videoIndex)
+        })
+    }
+
+    if (imageTags.length) {
         downloadImageObject(tweet, tweetSelector, imageTags)
     }
 }
 
-async function downloadVideoObject(tweet, tweetSelector, videoTag) {
+async function downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex, videoIndex) {
     var videoSource = videoTag.src
     if (!videoSource) {
         videoSource = tweet.find('source')[0].src
@@ -176,16 +258,21 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag) {
 
     let url = null
     if (videoSource.includes('blob')) {
-        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"))
+        // console.log(tweet.parents('[data-testid="cellInnerDiv"]').html())
+        let reply_n = tweet.parents('[data-testid="cellInnerDiv"]').index()  // get the index of tweet (not 0 if reply)
+        console.log('reply_n = ' + reply_n + ' ---- (this number might be wrong)')
+
+        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector))
+        console.log('extracted video url = ' + url)
     }
 
     browser.runtime.sendMessage({
         type: 'video',
         videoSource: url || videoSource,
         tweetId: getTweetId(tweet, tweetSelector),
-        readerableFilename: generateReaderableFilename(tweet, tweetSelector),
+        readerableFilename: generateReaderableFilename(tweet, tweetSelector, nameIndex),
         tweetSelector: tweetSelector,
-        token: getCookie("ct0")
+        token: getCookie("ct0",)
     })
 }
 

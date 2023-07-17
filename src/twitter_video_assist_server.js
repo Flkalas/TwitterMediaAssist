@@ -29,7 +29,7 @@ function processVideoSource({
         if (!!tweetId) {
             processBlobVideo(tweetId, readerableFilename, token)
         }
-    } else if (videoSource.includes('ext_tw_video')) {
+    } else if (videoSource.includes('ext_tw_video') || videoSource.includes('amplify_video')) {
         downloadMp4Video(videoSource, readerableFilename)
     } else {
         processGifVideo(videoSource, readerableFilename)
