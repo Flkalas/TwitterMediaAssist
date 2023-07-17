@@ -228,7 +228,7 @@ function downloadMediaObject(event) {
 
     var videoTags = tweet.find('video')
     var videoIndexes = getVideoIndexes(tweet)
-    console.log('indexes = [' + videoIndexes + ']')
+    console.log('videoIndexes = [' + videoIndexes + ']')
 
     if (videoTags.length) {
         videoIndexes.forEach(function(videoIndex, loopIndex ) {
@@ -253,11 +253,8 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag, nameIndex, vi
 
     let url = null
     if (videoSource.includes('blob')) {
-        // console.log(tweet.parents('[data-testid="cellInnerDiv"]').html())
-        let reply_n = tweet.parents('[data-testid="cellInnerDiv"]').index()  // get the index of tweet (not 0 if reply)
-        console.log('reply_n = ' + reply_n + ' ---- (this number might be wrong)')
         try {
-            url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), reply_n, videoIndex, getTweetOwner(tweet, tweetSelector))
+            url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), videoIndex, getTweetOwner(tweet, tweetSelector))
             console.log('extracted video url = ' + url)
         } catch (e) {
             // Handle the error here

@@ -66,38 +66,24 @@ async function processComplexTsVideo(id, readableName, token) {
     downloadTsVideo(videoData, filename, readableName)
 }
 
-function extractUrlFromVideoSources(tweetResults, videoIndex) {
-    let videoSources = null
-    if (tweetResults.hasOwnProperty('tweet')) {
-        videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
-    } else {
-        // media index problem - use videoIndex to find the correct media
-        videoSources = tweetResults["legacy"]["extended_entities"]["media"][videoIndex]["video_info"]["variants"]
-
-    }
-    videoSources.sort(sortByBitrate)
-    return videoSources[0]['url']
-}
-
-async function extractGraphQlMp4Video(id, token, reply_n, videoIndex, owner) {
+async function extractGraphQlMp4Video(id, token, videoIndex, owner) {
     try {
         const jsonResponse = await archiveTweetDetailJson(id, token)
-        let tweetResults = null
-        for (let i = 0; i <= 100; i++) {
-            try {
-                console.log('trying - ' + i)
-                const jsonResponse = await archiveTweetDetailJson(id, token);
-                let tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][i]["content"]["itemContent"]["tweet_results"]["result"];
-                const videoUrl = extractUrlFromVideoSources(tweetResults, videoIndex);
-                return videoUrl;
-            } catch (e) {
-                // If an error occurs, continue to the next entry
-            }
+
+        // just use the id to find out the correct entry
+        let tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"].find(entry => entry["entryId"].trim().endsWith(id))["content"]["itemContent"]["tweet_results"]["result"]
+
+        let videoSources = null
+        if (tweetResults.hasOwnProperty('tweet')) {
+            videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
+        } else {
+            // media index problem - use videoIndex to find the correct media
+            videoSources = tweetResults["legacy"]["extended_entities"]["media"][videoIndex]["video_info"]["variants"]
         }
-        throw TypeError  // 100 tries exhausted, throw error
-    } catch (e) {  // catches error from trying entry: reply_n
+        videoSources.sort(sortByBitrate)
+        return videoSources[0]['url']
+    } catch (e) {
         if (e instanceof TypeError) {
-            // console.log('>>> both 0 and reply_n not working - timeline error - try getting the video from its own page')
             window.open(`https://twitter.com/${owner}/status/${id}`)
             throw e
             // return null
