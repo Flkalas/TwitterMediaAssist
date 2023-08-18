@@ -191,6 +191,7 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag) {
 
 function downloadImageObject(tweet, tweetSelector, imageTags) {
     // const uploadedImageQuery = /(https:\/\/pbs.twimg.com\/media\/.*)$/g;
+    const formatAttributeQuery = /(format=)(.*)(\&?.*)/g
     const nameAttributeQuery = /(name=)(.*)(\&?.*)/g
 
     imageTags = imageTags.filter((index, element) => {
@@ -206,6 +207,32 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
     let accumIndex = 1
     imageTags.each((index, element) => {
         let src = $(element).attr('src')
+        if (formatAttributeQuery.test(src)) {
+            src = src.replace(formatAttributeQuery, '$1jpg$3')
+        } else if (src.includes('=')) {
+            src = src + '&format=jpg';
+        } else {
+            src = src + '?format=jpg';
+        }
+        if (nameAttributeQuery.test(src)) {
+            src = src.replace(nameAttributeQuery, '$1orig$3')
+        } else if (src.includes('=')) {
+            src = src + '&name=orig';
+        } else {
+            src = src + '?name=orig';
+        }
+        processImageDownload(src, generateReaderableFilename(tweet, tweetSelector, accumIndex))
+        accumIndex++;
+    })
+    imageTags.each((index, element) => {
+        let src = $(element).attr('src')
+        if (formatAttributeQuery.test(src)) {
+            src = src.replace(formatAttributeQuery, '$1png$3')
+        } else if (src.includes('=')) {
+            src = src + '&format=png';
+        } else {
+            src = src + '?format=png';
+        }
         if (nameAttributeQuery.test(src)) {
             src = src.replace(nameAttributeQuery, '$1orig$3')
         } else if (src.includes('=')) {
