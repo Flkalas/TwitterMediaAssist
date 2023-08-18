@@ -143,22 +143,29 @@ function injectDownloadButton(target) {
     $(favIcon).siblings(".tva_download_action").find('button.tva_js_download').click('.tweet', downloadMediaObject)
 }
 
-function indexOfImage(selector) {
-    if (selector !== modalCalss) {
-        return
+function indexOfImage(selector, originalIndex, totalCount) {
+    if (selector === modalCalss) {
+        const splited = window.location.pathname.split('/')
+
+        return Number(splited[splited.length - 1]);
+    } else if (totalCount === 1) {
+        return 0;
     }
-    const splited = window.location.pathname.split('/')
-    return Number(splited[splited.length - 1]) - 1
+    return originalIndex + 1;
 }
 
 function downloadMediaObject(event) {
+    event.stopPropagation()
+    event.preventDefault()
+
     const tweetSelector = event.data
     const tweet = $(event.currentTarget).closest(tweetSelector)
-    var videoTag = tweet.find('video')[0]
-    var imageTags = tweet.find('img')
+    const videoTag = tweet.find('video')[0]
+
+    let imageTags = Array.from(tweet[0].querySelectorAll('img[src*="https://pbs.twimg.com/media"]'))
 
     if (tweetSelector === modalCalss && imageTags.length) {
-        imageTags = $(imageTags[indexOfImage(tweetSelector)])
+        imageTags = [imageTags[0]]
     }
 
     if (videoTag) {
@@ -190,66 +197,26 @@ async function downloadVideoObject(tweet, tweetSelector, videoTag) {
 }
 
 function downloadImageObject(tweet, tweetSelector, imageTags) {
-    // const uploadedImageQuery = /(https:\/\/pbs.twimg.com\/media\/.*)$/g;
-    const formatAttributeQuery = /(format=)(.*)(\&?.*)/g
-    const nameAttributeQuery = /(name=)(.*)(\&?.*)/g
-
-    imageTags = imageTags.filter((index, element) => {
-        return $(element).attr('src').includes('https://pbs.twimg.com/media');
-    });
-
-    if (imageTags.length > 3) {
-        var temp = imageTags[1];
-        imageTags[1] = imageTags[2];
-        imageTags[2] = temp;
-    }
-
-    let accumIndex = 1
-    imageTags.each((index, element) => {
-        let src = $(element).attr('src')
-        if (formatAttributeQuery.test(src)) {
-            src = src.replace(formatAttributeQuery, '$1jpg$3')
-        } else if (src.includes('=')) {
-            src = src + '&format=jpg';
-        } else {
-            src = src + '?format=jpg';
-        }
-        if (nameAttributeQuery.test(src)) {
-            src = src.replace(nameAttributeQuery, '$1orig$3')
-        } else if (src.includes('=')) {
-            src = src + '&name=orig';
-        } else {
-            src = src + '?name=orig';
-        }
-        processImageDownload(src, generateReaderableFilename(tweet, tweetSelector, accumIndex))
-        accumIndex++;
-    })
-    imageTags.each((index, element) => {
-        let src = $(element).attr('src')
-        if (formatAttributeQuery.test(src)) {
-            src = src.replace(formatAttributeQuery, '$1png$3')
-        } else if (src.includes('=')) {
-            src = src + '&format=png';
-        } else {
-            src = src + '?format=png';
-        }
-        if (nameAttributeQuery.test(src)) {
-            src = src.replace(nameAttributeQuery, '$1orig$3')
-        } else if (src.includes('=')) {
-            src = src + '&name=orig';
-        } else {
-            src = src + '?name=orig';
-        }
-        processImageDownload(src, generateReaderableFilename(tweet, tweetSelector, accumIndex))
-        accumIndex++;
+    imageTags.map((element, index) => {
+        const src = refineImageSourceParams(element.src)
+        const imageIndex = indexOfImage(tweetSelector, index, imageTags.length)
+        const readableFilename = generateReaderableFilename(tweet, tweetSelector, imageIndex)
+        processImageDownload(src, readableFilename)
     })
 }
 
-function generateReaderableFilename(tweet, selector, index) {
-    if (selector === modalCalss) {
-        return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}-${indexOfImage(selector) + 1}`
-    } else if (!!index) {
-        return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}-${index}`
+function refineImageSourceParams(src) {
+    const url = new URL(src);
+    const searchParams = new URLSearchParams(url);
+    searchParams.set('format', 'png')
+    url.search = searchParams
+
+    return url.toString()
+}
+
+function generateReaderableFilename(tweet, selector, imageIndex) {
+    if (!!imageIndex) {
+        return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}-${imageIndex}`
     } else {
         return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}`
     }
