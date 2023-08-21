@@ -208,7 +208,8 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
 function refineImageSourceParams(src) {
     const url = new URL(src);
     const searchParams = new URLSearchParams(url);
-    searchParams.set('format', 'png')
+    searchParams.set('format', 'jpg')
+    searchParams.set('name', 'orig')
     url.search = searchParams
 
     return url.toString()
