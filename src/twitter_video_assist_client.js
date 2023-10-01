@@ -119,6 +119,7 @@ function injectReactDownloadButton(target) {
     const iconsGroups = tweet.find('div[role="group"]')
     const lastIcon = $(iconsGroups[iconsGroups.length - 1]).children('div:last-child')
     lastIcon.after(lastIcon.clone())
+    lastIcon.addClass('r-13awgt0 r-18u37iz r-1h0z5md')
 
     var download = lastIcon.next()
     download.addClass('tva-download-icon')
