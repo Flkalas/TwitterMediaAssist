@@ -11,7 +11,7 @@ function chromeDownloadRenamer(item, suggest) {
     }
 
     let result = fileNameRegex.exec(item.filename)
-    const filename = result[1]
+    const filename = result[1].replace(/\.jfif$/, '.jpg')
     const suggestFilename = readableNameList[filename] || item.filename
     const replacedFilePath = item.filename.replace(fileNameRegex, suggestFilename)
     delete readableNameList[filename]
@@ -23,17 +23,17 @@ function chromeDownloadRenamer(item, suggest) {
     }
 }
 
-function processBlobVideo(id, readableName, token) {
+function processBlobVideo(id, readableName, token, videoIndex) {
     browser.storage.sync.get({
         isVideoSaveAsTS: true,
         isVideoSaveAsMP4: true,
     }).then((items) => {
-        if (items.isVideoSaveAsTS) {
-            processComplexTsVideo(id, readableName, token)
-        }
+        // if (items.isVideoSaveAsTS) {
+        //     processComplexTsVideo(id, readableName, token)
+        // }
 
         if (items.isVideoSaveAsMP4) {
-            processComplexMp4Video(id, readableName, token)
+            processComplexMp4Video(id, readableName, token, videoIndex)
         }
     })
 }
@@ -66,24 +66,27 @@ async function processComplexTsVideo(id, readableName, token) {
     downloadTsVideo(videoData, filename, readableName)
 }
 
-async function extractGraphQlMp4Video(id, token) {
+async function extractGraphQlMp4Video(id, token, videoIndex, owner) {
     try {
         const jsonResponse = await archiveTweetDetailJson(id, token)
-        const tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
+
+        // just use the id to find out the correct entry
+        let tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"].find(entry => entry["entryId"].trim().endsWith(id))["content"]["itemContent"]["tweet_results"]["result"]
 
         let videoSources = null
         if (tweetResults.hasOwnProperty('tweet')) {
             videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
         } else {
-            videoSources = tweetResults["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
-
+            // media index problem - use videoIndex to find the correct media
+            videoSources = tweetResults["legacy"]["extended_entities"]["media"][videoIndex]["video_info"]["variants"]
         }
         videoSources.sort(sortByBitrate)
-
         return videoSources[0]['url']
     } catch (e) {
         if (e instanceof TypeError) {
-            return null
+            window.open(`https://twitter.com/${owner}/status/${id}`)
+            throw e
+            // return null
         } else {
             throw e;
         }
@@ -125,9 +128,9 @@ const sortByBitrate = (a, b) => {
     return bitrateB - bitrateA;
 }
 
-async function processComplexMp4Video(id, readableName, token) {
+async function processComplexMp4Video(id, readableName, token, videoIndex) {
     var pageUrl = "https://api.twitter.com/1.1/statuses/show.json?include_profile_interstitial_type=1&include_blocking=1&include_blocked_by=1&include_followed_by=1&include_want_retweets=1&include_mute_edge=1&include_can_dm=1&skip_status=1&cards_platform=Web-12&include_cards=1&include_ext_alt_text=true&include_reply_count=1&tweet_mode=extended&trim_user=false&include_ext_media_color=true&id=" + id
-    var mp4Url = await getMp4Url(pageUrl, token)
+    var mp4Url = await getMp4Url(pageUrl, token, videoIndex)
 
     downloadMp4Video(mp4Url, readableName)
 }
@@ -140,7 +143,7 @@ function processImageDownload(src, readableName) {
     })
 }
 
-function getMp4Url(url, token) {
+function getMp4Url(url, token, videoIndex) {
     return new Promise((resolve, reject) => {
         var init = {
             origin: 'https://mobile.twitter.com',
@@ -158,7 +161,7 @@ function getMp4Url(url, token) {
             .then((response) => {
                 if (response.status == 200) {
                     response.json().then((json) => {
-                        let mp4Variants = (json.extended_entities || json.quoted_status.extended_entities).media[0].video_info.variants.filter(variant => variant.content_type === 'video/mp4')
+                        let mp4Variants = (json.extended_entities || json.quoted_status.extended_entities).media[videoIndex || 0].video_info.variants.filter(variant => variant.content_type === 'video/mp4')
                         mp4Variants = mp4Variants.sort((a, b) => (b.bitrate - a.bitrate))
 
                         let url = ''
