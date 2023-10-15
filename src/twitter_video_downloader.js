@@ -38,17 +38,17 @@ function processBlobVideo(id, readableName, token) {
     })
 }
 
-function processGifVideo(url, readableName) {
+function processGifVideo({url, readerableFilename}) {
     browser.storage.sync.get({
         isConvertGIF: true,
         isSaveMP4: true,
     }).then((items) => {
         if (items.isConvertGIF) {
-            convertGif(url, readableName)
+            convertGif(url, readerableFilename)
         }
 
         if (items.isSaveMP4) {
-            downloadMp4Video(url, readableName)
+            downloadMp4Video({url, readerableFilename})
         }
     })
 }
@@ -66,21 +66,57 @@ async function processComplexTsVideo(id, readableName, token) {
     downloadTsVideo(videoData, filename, readableName)
 }
 
-async function extractGraphQlMp4Video(id, token) {
+async function extractGraphQlMp4Video(id, token, index) {
     try {
         const jsonResponse = await archiveTweetDetailJson(id, token)
         const tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"][0]["content"]["itemContent"]["tweet_results"]["result"]
 
         let videoSources = null
         if (tweetResults.hasOwnProperty('tweet')) {
-            videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
+            videoSources = tweetResults['tweet']["legacy"]["extended_entities"]["media"][index]["video_info"]["variants"]
         } else {
-            videoSources = tweetResults["legacy"]["extended_entities"]["media"][0]["video_info"]["variants"]
-
+            videoSources = tweetResults["legacy"]["extended_entities"]["media"][index]["video_info"]["variants"]
         }
         videoSources.sort(sortByBitrate)
 
         return videoSources[0]['url']
+    } catch (e) {
+        if (e instanceof TypeError) {
+            return null
+        } else {
+            throw e;
+        }
+    }
+}
+
+function getMaximumBitrate(videoSources) {
+    videoSources.sort(sortByBitrate)
+    return videoSources[0]['url']
+}
+
+async function extractGraphQlMedia(id, token) {
+    try {
+        const jsonResponse = await archiveTweetDetailJson(id, token)
+        const tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"]
+        const targetTweet = tweetResults.find((tweet) => tweet.entryId.includes(id))["content"]["itemContent"]["tweet_results"]["result"];
+
+        let medias = null
+        if (targetTweet.hasOwnProperty('tweet')) {
+            medias = targetTweet['tweet']["legacy"]["extended_entities"]["media"]
+        } else {
+            medias = targetTweet["legacy"]["extended_entities"]["media"]
+        }
+
+        return medias.map((media) => {
+            let url = null
+            if (media.type == 'photo') {
+                return { type: 'image', url: refineImageSourceParams(media.media_url_https) }
+            } else if (media.type == 'video') {
+                return { type: 'video', url: getMaximumBitrate(media.video_info.variants) }
+            } else if (media.type == 'animated_gif') {
+                return { type: 'gif', url: getMaximumBitrate(media.video_info.variants) }
+            }
+        })
     } catch (e) {
         if (e instanceof TypeError) {
             return null
@@ -337,7 +373,7 @@ function fileExtension(url) {
     return splited[splited.length - 1].split('?')[0]
 }
 
-function downloadMp4Video(url, readableName) {
+function downloadMp4Video({url, readerableFilename}) {
     browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
@@ -348,14 +384,14 @@ function downloadMp4Video(url, readableName) {
         }
 
         if (items.readableName) {
-            options.filename = readableName + '.' + fileExtension(url)
+            options.filename = readerableFilename + '.' + fileExtension(url)
         }
 
         browser.downloads.download(options)
     })
 }
 
-function downloadImage(url, readableName) {
+function downloadImage({url, readerableFilename}) {
     browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
@@ -380,13 +416,13 @@ function downloadImage(url, readableName) {
 
         if (!!items.readableName) {
             if (!!chrome.downloads.onDeterminingFilename) {
-                readableNameList[`${filename}.${format}`] = `${readableName}.${format}`
+                readableNameList[`${filename}.${format}`] = `${readerableFilename}.${format}`
 
                 if (!!chrome.downloads.onDeterminingFilename && !isRenamerActivated()) {
                     chrome.downloads.onDeterminingFilename.addListener(chromeDownloadRenamer)
                 }
             }
-            filename = readableName
+            filename = readerableFilename
         }
 
         if (formatMatches.length) {
@@ -395,8 +431,10 @@ function downloadImage(url, readableName) {
 
         browser.downloads.download(options)
             .then((_downloadItem) => {
-                if (!Object.keys(readableNameList).length) {
-                    chrome.downloads.onDeterminingFilename.removeListener(chromeDownloadRenamer)
+                if (!!chrome.downloads.onDeterminingFilename) {
+                    if (!Object.keys(readableNameList).length) {
+                        chrome.downloads.onDeterminingFilename.removeListener(chromeDownloadRenamer)
+                    }
                 }
             })
     })

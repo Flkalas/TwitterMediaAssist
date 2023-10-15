@@ -9,12 +9,15 @@ browser.runtime.onMessage.addListener(processRequest)
 function processRequest(request) {
     switch (request.type) {
         case 'video':
-            processVideoSource(request)
+            downloadMp4Video(request)
             break
 
         case 'image':
-            downloadImage(request.url, request.readableName)
+            downloadImage(request)
             break
+
+        case 'gif':
+            processGifVideo(request)
     }
 }
 
