@@ -144,7 +144,7 @@ function injectDownloadButton(target) {
     $(favIcon).siblings(".tva_download_action").find('button.tva_js_download').click('.tweet', downloadMediaObject)
 }
 
-function indexOfImage(selector, originalIndex, totalCount) {
+function indexOfMedia(selector, originalIndex, totalCount) {
     if (selector === modalCalss) {
         const splited = window.location.pathname.split('/')
 
@@ -155,52 +155,53 @@ function indexOfImage(selector, originalIndex, totalCount) {
     return originalIndex + 1;
 }
 
-function downloadMediaObject(event) {
+async function downloadMediaObject(event) {
     event.stopPropagation()
     event.preventDefault()
 
     const tweetSelector = event.data
     const tweet = $(event.currentTarget).closest(tweetSelector)
-    const videoTag = tweet.find('video')[0]
+    const tweetId = getTweetId(tweet, tweetSelector)
 
-    let imageTags = Array.from(tweet[0].querySelectorAll('img[src*="https://pbs.twimg.com/media"]'))
+    media = await extractGraphQlMedia(tweetId, getCookie("ct0"))
+    media.map((eachMedia, index) => {
+        const mediaIndex = indexOfMedia(tweetSelector, index, media.length)
+        const readableFilename = generateReaderableFilename(tweet, tweetSelector, mediaIndex)
 
-    if (tweetSelector === modalCalss && imageTags.length) {
-        imageTags = [imageTags[0]]
-    }
-
-    if (videoTag) {
-        downloadVideoObject(tweet, tweetSelector, videoTag)
-    } else if (imageTags.length) {
-        downloadImageObject(tweet, tweetSelector, imageTags)
-    }
+        browser.runtime.sendMessage(
+            Object.assign(eachMedia, { readerableFilename: readableFilename })
+        )
+    })
 }
 
-async function downloadVideoObject(tweet, tweetSelector, videoTag) {
-    var videoSource = videoTag.src
-    if (!videoSource) {
-        videoSource = tweet.find('source')[0].src
-    }
+async function downloadVideoObject(tweet, tweetSelector, videoTags) {
+    videoTags.map(async (element, index) => {
+        var videoSource = element.src
+        if (!videoSource) {
+            videoSource = tweet.find('source')[0].src
+        }
 
-    let url = null
-    if (videoSource.includes('blob')) {
-        url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"))
-    }
+        let url = null
+        if (videoSource.includes('blob')) {
+            url = await extractGraphQlMp4Video(getTweetId(tweet, tweetSelector), getCookie("ct0"), index)
+        }
 
-    browser.runtime.sendMessage({
-        type: 'video',
-        videoSource: url || videoSource,
-        tweetId: getTweetId(tweet, tweetSelector),
-        readerableFilename: generateReaderableFilename(tweet, tweetSelector),
-        tweetSelector: tweetSelector,
-        token: getCookie("ct0")
+        const videoIndex = indexOfMedia(tweetSelector, index, videoTags.length)
+        browser.runtime.sendMessage({
+            type: 'video',
+            videoSource: url || videoSource,
+            tweetId: getTweetId(tweet, tweetSelector),
+            readerableFilename: generateReaderableFilename(tweet, tweetSelector, videoIndex),
+            tweetSelector: tweetSelector,
+            token: getCookie("ct0")
+        })
     })
 }
 
 function downloadImageObject(tweet, tweetSelector, imageTags) {
     imageTags.map((element, index) => {
         const src = refineImageSourceParams(element.src)
-        const imageIndex = indexOfImage(tweetSelector, index, imageTags.length)
+        const imageIndex = indexOfMedia(tweetSelector, index, imageTags.length)
         const readableFilename = generateReaderableFilename(tweet, tweetSelector, imageIndex)
         processImageDownload(src, readableFilename)
     })
