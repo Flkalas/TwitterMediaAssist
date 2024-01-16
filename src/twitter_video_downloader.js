@@ -2,7 +2,7 @@ let readableNameList = {}
 const fileNameRegex = /([\w,\s-.]+\.[A-Za-z]{2,4}$)/
 
 function chromeDownloadRenamer(item, suggest) {
-    if (!item.byExtensionId && item.byExtensionId !== chrome.runtime.id) {
+    if (!item.byExtensionId || item.byExtensionId !== chrome.runtime.id) {
         return
     }
 
