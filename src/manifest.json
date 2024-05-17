@@ -2,13 +2,15 @@
   "manifest_version": 2,
   "name": "Twitter Media Assist",
   "description": "For your better Twitter media experience.",
-  "version": "3.2.4",
+  "version": "3.2.5",
 
   "permissions": [
+    "*://x.com/*",
+    "*://*.x.com/*",
     "*://twitter.com/*",
     "*://*.twitter.com/*",
-	"*://*.twimg.com/*",
-	"*://video.twimg.com/*",
+    "*://*.twimg.com/*",
+    "*://video.twimg.com/*",
     "storage",
     "downloads",
     "tabs"
@@ -22,7 +24,7 @@
   },
 
   "content_scripts": [{
-    "matches": ["*://twitter.com/*", "*://mobile.twitter.com/*"],
+    "matches": ["*://twitter.com/*", "*://mobile.twitter.com/*", "*://x.com/*", "*://*.x.com/*"],
     "css": ["twitter_video_assist_client.css"],
     "js": ["browser-polyfill.min.js", "jquery-3.3.1.min.js", "twitter_video_downloader.js", "twitter_video_assist_client.js"]
   }],
