@@ -118,15 +118,24 @@ function injectReactDownloadButton(target) {
 
     const iconsGroups = tweet.find('div[role="group"]')
     const lastIcon = $(iconsGroups[iconsGroups.length - 1]).children('div:last-child')
-    lastIcon.after(lastIcon.clone())
+    const download = lastIcon.clone()
     lastIcon.addClass('r-13awgt0 r-18u37iz r-1h0z5md')
 
-    var download = lastIcon.next()
     download.addClass('tva-download-icon')
     download.children('div:first-child').data('testid', 'download')
     download.children('div:first-child').attr('aria-label', 'Media Download')
     download.find('svg').html(downloadIcon)
     download.click('article', downloadMediaObject)
+
+    const button = download.find('div > button');
+    if (button) {
+        button.removeAttr('aria-disabled');
+        button.removeAttr('disabled');
+        button.removeClass();
+        button.addClass("css-175oi2r r-1777fci r-bt1l66 r-bztko3 r-lrvibr r-1loqt21 r-1ny4l3l")
+    }
+    
+    lastIcon.after(download)
 }
 
 function injectDownloadButton(target) {
