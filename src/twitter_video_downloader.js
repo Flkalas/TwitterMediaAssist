@@ -127,7 +127,7 @@ async function extractGraphQlMedia(id, token) {
 }
 
 async function archiveTweetDetailJson(id, token) {
-    let tweetDetailUrl = `https://x.com/i/api/graphql/-Ls3CrSQNo2fRKH6i6Na1A/TweetDetail?variables=%7B%22focalTweetId%22%3A%22${id}%22%2C%22with_rux_injections%22%3Afalse%2C%22includePromotedContent%22%3Atrue%2C%22withCommunity%22%3Atrue%2C%22withQuickPromoteEligibilityTweetFields%22%3Atrue%2C%22withBirdwatchNotes%22%3Atrue%2C%22withVoice%22%3Atrue%2C%22withV2Timeline%22%3Atrue%7D&features=%7B%22rweb_lists_timeline_redesign_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Afalse%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_media_download_video_enabled%22%3Afalse%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%2C%22withArticleRichContentState%22%3Afalse%7D`
+    let tweetDetailUrl = `https://${window.location.hostname}/i/api/graphql/-Ls3CrSQNo2fRKH6i6Na1A/TweetDetail?variables=%7B%22focalTweetId%22%3A%22${id}%22%2C%22with_rux_injections%22%3Afalse%2C%22includePromotedContent%22%3Atrue%2C%22withCommunity%22%3Atrue%2C%22withQuickPromoteEligibilityTweetFields%22%3Atrue%2C%22withBirdwatchNotes%22%3Atrue%2C%22withVoice%22%3Atrue%2C%22withV2Timeline%22%3Atrue%7D&features=%7B%22rweb_lists_timeline_redesign_enabled%22%3Atrue%2C%22responsive_web_graphql_exclude_directive_enabled%22%3Atrue%2C%22verified_phone_label_enabled%22%3Afalse%2C%22creator_subscriptions_tweet_preview_api_enabled%22%3Atrue%2C%22responsive_web_graphql_timeline_navigation_enabled%22%3Atrue%2C%22responsive_web_graphql_skip_user_profile_image_extensions_enabled%22%3Afalse%2C%22tweetypie_unmention_optimization_enabled%22%3Atrue%2C%22responsive_web_edit_tweet_api_enabled%22%3Atrue%2C%22graphql_is_translatable_rweb_tweet_is_translatable_enabled%22%3Atrue%2C%22view_counts_everywhere_api_enabled%22%3Atrue%2C%22longform_notetweets_consumption_enabled%22%3Atrue%2C%22responsive_web_twitter_article_tweet_consumption_enabled%22%3Afalse%2C%22tweet_awards_web_tipping_enabled%22%3Afalse%2C%22freedom_of_speech_not_reach_fetch_enabled%22%3Atrue%2C%22standardized_nudges_misinfo%22%3Atrue%2C%22tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled%22%3Atrue%2C%22longform_notetweets_rich_text_read_enabled%22%3Atrue%2C%22longform_notetweets_inline_media_enabled%22%3Atrue%2C%22responsive_web_media_download_video_enabled%22%3Afalse%2C%22responsive_web_enhance_cards_enabled%22%3Afalse%7D&fieldToggles=%7B%22withAuxiliaryUserLabels%22%3Afalse%2C%22withArticleRichContentState%22%3Afalse%7D`
 
     const response = await fetch(tweetDetailUrl, {
         "credentials": "include",
@@ -397,10 +397,10 @@ function downloadImage({url, readerableFilename}) {
         readableName: false
     }).then((items) => {
         const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g
-        const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g
+        const fileNameRegex = /([^/\\&\?]+)(\.\w{2,4})(?=([\?&].*$|$))/
 
         const nameMatches = uploadedImageQuery.exec(url)
-        const formatMatches = extensionAttributeQuery.exec(url)
+        const filenameMatches = fileNameRegex.exec(url)
 
         let options = {
             url: url,
@@ -408,7 +408,7 @@ function downloadImage({url, readerableFilename}) {
         }
 
         let filename = 'no_title'
-        const format = formatMatches[1]
+        const format = filenameMatches[2] || ".jpg"
 
         if (nameMatches.length) {
             filename = nameMatches[1]
@@ -416,7 +416,7 @@ function downloadImage({url, readerableFilename}) {
 
         if (!!items.readableName) {
             if (!!chrome.downloads.onDeterminingFilename) {
-                readableNameList[`${filename}.${format}`] = `${readerableFilename}.${format}`
+                readableNameList[`${filename}${format}`] = `${readerableFilename}${format}`
 
                 if (!!chrome.downloads.onDeterminingFilename && !isRenamerActivated()) {
                     chrome.downloads.onDeterminingFilename.addListener(chromeDownloadRenamer)
@@ -425,8 +425,8 @@ function downloadImage({url, readerableFilename}) {
             filename = readerableFilename
         }
 
-        if (formatMatches.length) {
-            options.filename = `${filename}.${format}`
+        if (filenameMatches.length) {
+            options.filename = `${filename}${format}`
         }
 
         browser.downloads.download(options)
