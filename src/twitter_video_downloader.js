@@ -397,10 +397,10 @@ function downloadImage({url, readerableFilename}) {
         readableName: false
     }).then((items) => {
         const uploadedImageQuery = /https:\/\/pbs.twimg.com\/media\/(.*)?\?.*/g
-        const extensionAttributeQuery = /(?:\?|\&)format\=([^&]+)/g
+        const fileNameRegex = /([^/\\&\?]+)(\.\w{2,4})(?=([\?&].*$|$))/
 
         const nameMatches = uploadedImageQuery.exec(url)
-        const formatMatches = extensionAttributeQuery.exec(url)
+        const filenameMatches = fileNameRegex.exec(url)
 
         let options = {
             url: url,
@@ -408,7 +408,7 @@ function downloadImage({url, readerableFilename}) {
         }
 
         let filename = 'no_title'
-        const format = formatMatches[1]
+        const format = filenameMatches[2] || ".jpg"
 
         if (nameMatches.length) {
             filename = nameMatches[1]
@@ -416,7 +416,7 @@ function downloadImage({url, readerableFilename}) {
 
         if (!!items.readableName) {
             if (!!chrome.downloads.onDeterminingFilename) {
-                readableNameList[`${filename}.${format}`] = `${readerableFilename}.${format}`
+                readableNameList[`${filename}${format}`] = `${readerableFilename}${format}`
 
                 if (!!chrome.downloads.onDeterminingFilename && !isRenamerActivated()) {
                     chrome.downloads.onDeterminingFilename.addListener(chromeDownloadRenamer)
@@ -425,8 +425,8 @@ function downloadImage({url, readerableFilename}) {
             filename = readerableFilename
         }
 
-        if (formatMatches.length) {
-            options.filename = `${filename}.${format}`
+        if (filenameMatches.length) {
+            options.filename = `${filename}${format}`
         }
 
         browser.downloads.download(options)
