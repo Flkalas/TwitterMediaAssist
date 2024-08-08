@@ -5,8 +5,22 @@ const reactProgressPopup = '<div class="tva-react-spinner-wrapper"><div class="t
 
 const modalCalss = 'div[aria-modal="true"]'
 
-$(document).ready(initialize)
-$(document).on('DOMNodeInserted', injectAdditionalDownloadButtons)
+const targetNode = document.body
+const config = { childList: true, subtree: true }
+
+const callback = function (mutationsList, observer) {
+    for (const mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach(node => {
+                injectAdditionalDownloadButtons(node)
+            })
+        }
+    }
+}
+
+const observer = new MutationObserver(callback)
+observer.observe(targetNode, config)
+
 $(document).on({
     mouseenter: function (e) {
         $(e.currentTarget).find('svg').prev().addClass('r-zv2cs0')
@@ -34,18 +48,18 @@ function initialize() {
     $(".tva_ext_container").css("z-index", getMaximumZindex() + 1)
 }
 
-function injectAdditionalDownloadButtons(event) {
-    const tweets = $(event.target).find('article')
+function injectAdditionalDownloadButtons(insertedElement) {
+    const tweets = $(insertedElement).find('article')
 
     if (tweets.length) {
         tweets.each((index, element) => {
             analysisDom(element)
         })
     } else {
-        analysisDom(event.target)
+        analysisDom(insertedElement)
     }
 
-    $(event.target).find('.AdaptiveMedia-video').each(function () {
+    $(insertedElement).find('.AdaptiveMedia-video').each(function () {
         injectDownloadButton(this)
     })
 }
@@ -173,14 +187,8 @@ async function downloadMediaObject(event) {
     const tweetId = getTweetId(tweet, tweetSelector)
 
     media = await extractGraphQlMedia(tweetId, getCookie("ct0"))
-    media.map((eachMedia, index) => {
-        const mediaIndex = indexOfMedia(tweetSelector, index, media.length)
-        const readableFilename = generateReaderableFilename(tweet, tweetSelector, mediaIndex)
+    media.map((eachMedia) => browser.runtime.sendMessage(eachMedia))
 
-        browser.runtime.sendMessage(
-            Object.assign(eachMedia, { readerableFilename: readableFilename })
-        )
-    })
 }
 
 async function downloadVideoObject(tweet, tweetSelector, videoTags) {
@@ -200,7 +208,7 @@ async function downloadVideoObject(tweet, tweetSelector, videoTags) {
             type: 'video',
             videoSource: url || videoSource,
             tweetId: getTweetId(tweet, tweetSelector),
-            readerableFilename: generateReaderableFilename(tweet, tweetSelector, videoIndex),
+            readableFilename: generateReadableFilename(tweet, tweetSelector, videoIndex),
             tweetSelector: tweetSelector,
             token: getCookie("ct0")
         })
@@ -211,7 +219,7 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
     imageTags.map((element, index) => {
         const src = refineImageSourceParams(element.src)
         const imageIndex = indexOfMedia(tweetSelector, index, imageTags.length)
-        const readableFilename = generateReaderableFilename(tweet, tweetSelector, imageIndex)
+        const readableFilename = generateReadableFilename(tweet, tweetSelector, imageIndex)
         processImageDownload(src, readableFilename)
     })
 }
@@ -225,7 +233,7 @@ function refineImageSourceParams(src) {
     return url.toString()
 }
 
-function generateReaderableFilename(tweet, selector, imageIndex) {
+function generateReadableFilename(tweet, selector, imageIndex) {
     if (!!imageIndex) {
         return `${getTweetOwner(tweet, selector)}-${getTweetId(tweet, selector)}-${imageIndex}`
     } else {

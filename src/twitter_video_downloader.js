@@ -38,17 +38,17 @@ function processBlobVideo(id, readableName, token) {
     })
 }
 
-function processGifVideo({url, readerableFilename}) {
+function processGifVideo({ url, readableFilename }) {
     browser.storage.sync.get({
         isConvertGIF: true,
         isSaveMP4: true,
     }).then((items) => {
         if (items.isConvertGIF) {
-            convertGif(url, readerableFilename)
+            convertGif(url, readableFilename)
         }
 
         if (items.isSaveMP4) {
-            downloadMp4Video({url, readerableFilename})
+            downloadMp4Video({ url, readableFilename })
         }
     })
 }
@@ -100,29 +100,47 @@ async function extractGraphQlMedia(id, token) {
         const tweetResults = jsonResponse["data"]["threaded_conversation_with_injections_v2"]["instructions"][0]["entries"]
         const targetTweet = tweetResults.find((tweet) => tweet.entryId.includes(id))["content"]["itemContent"]["tweet_results"]["result"];
 
-        let medias = null
-        if (targetTweet.hasOwnProperty('tweet')) {
-            medias = targetTweet['tweet']["legacy"]["extended_entities"]["media"]
-        } else {
-            medias = targetTweet["legacy"]["extended_entities"]["media"]
+        let tweets = [targetTweet]
+
+        if (targetTweet.hasOwnProperty('quoted_status_result')) {
+            tweets.push(targetTweet['quoted_status_result']['result'])
         }
+
+        tweets = tweets.map(tweet => {
+            return !!tweet.tweet ? tweet.tweet : tweet
+        })
+
+        const medias = tweets.filter(tweet => !!tweet?.legacy?.extended_entities?.media).map(tweet => {
+            const screenName = tweet.core.user_results.result.legacy.screen_name
+            const tweetId = tweet.legacy.id_str
+            const medias = tweet.legacy.extended_entities.media
+
+            return medias.map((media, index) => {
+                const filename = medias.length === 1
+                    ? `${screenName}-${tweetId}`
+                    : `${screenName}-${tweetId}-${index + 1}`
+
+
+                return {
+                    ...media,
+                    readableFilename: filename
+                }
+            })
+
+        }).flat()
 
         return medias.map((media) => {
             let url = null
             if (media.type == 'photo') {
-                return { type: 'image', url: refineImageSourceParams(media.media_url_https) }
+                return { type: 'image', url: refineImageSourceParams(media.media_url_https), readableFilename: media.readableFilename }
             } else if (media.type == 'video') {
-                return { type: 'video', url: getMaximumBitrate(media.video_info.variants) }
+                return { type: 'video', url: getMaximumBitrate(media.video_info.variants), readableFilename: media.readableFilename }
             } else if (media.type == 'animated_gif') {
-                return { type: 'gif', url: getMaximumBitrate(media.video_info.variants) }
+                return { type: 'gif', url: getMaximumBitrate(media.video_info.variants), readableFilename: media.readableFilename }
             }
         })
     } catch (e) {
-        if (e instanceof TypeError) {
-            return null
-        } else {
-            throw e;
-        }
+        throw e
     }
 }
 
@@ -373,7 +391,7 @@ function fileExtension(url) {
     return splited[splited.length - 1].split('?')[0]
 }
 
-function downloadMp4Video({url, readerableFilename}) {
+function downloadMp4Video({ url, readableFilename }) {
     browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
@@ -384,14 +402,14 @@ function downloadMp4Video({url, readerableFilename}) {
         }
 
         if (items.readableName) {
-            options.filename = readerableFilename + '.' + fileExtension(url)
+            options.filename = readableFilename + '.' + fileExtension(url)
         }
 
         browser.downloads.download(options)
     })
 }
 
-function downloadImage({url, readerableFilename}) {
+function downloadImage({ url, readableFilename }) {
     browser.storage.sync.get({
         spcificPathName: false,
         readableName: false
@@ -416,13 +434,13 @@ function downloadImage({url, readerableFilename}) {
 
         if (!!items.readableName) {
             if (!!chrome.downloads.onDeterminingFilename) {
-                readableNameList[`${filename}${format}`] = `${readerableFilename}${format}`
+                readableNameList[`${filename}`] = `${readableFilename}${format} `
 
                 if (!!chrome.downloads.onDeterminingFilename && !isRenamerActivated()) {
                     chrome.downloads.onDeterminingFilename.addListener(chromeDownloadRenamer)
                 }
             }
-            filename = readerableFilename
+            filename = readableFilename
         }
 
         if (filenameMatches.length) {

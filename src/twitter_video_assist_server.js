@@ -24,18 +24,18 @@ function processRequest(request) {
 function processVideoSource({
     videoSource,
     tweetId,
-    readerableFilename,
+    readableFilename,
     tweetSelector,
     token
 }) {
     if (videoSource.includes('blob')) {
         if (!!tweetId) {
-            processBlobVideo(tweetId, readerableFilename, token)
+            processBlobVideo(tweetId, readableFilename, token)
         }
     } else if (videoSource.includes('ext_tw_video')) {
-        downloadMp4Video(videoSource, readerableFilename)
+        downloadMp4Video(videoSource, readableFilename)
     } else {
-        processGifVideo(videoSource, readerableFilename)
+        processGifVideo(videoSource, readableFilename)
     }
 }
 
