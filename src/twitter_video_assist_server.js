@@ -21,6 +21,88 @@ function processRequest(request) {
     }
 }
 
+browser.webRequest.onBeforeRequest.addListener(
+    async (details) => {
+        if (details.tabId === -1) return;
+
+        const filter = browser.webRequest.filterResponseData(details.requestId);
+        const chunks = [];
+
+        filter.ondata = event => {
+            chunks.push(event.data);
+            filter.write(event.data);
+        };
+
+        filter.onstop = async () => {
+            try {
+                const responseText = await new Blob(chunks).text();
+                const jsonResponse = JSON.parse(responseText);
+                const targetParents = findAllParents(jsonResponse, ['media_url_https', 'video_info']);
+
+                if (targetParents.length > 0) {
+                    const medias = extractMedias(targetParents);
+                    browser.tabs.sendMessage(details.tabId, {
+                        type: 'UPDATE_SESSION_DATA',
+                        data: medias
+                    });
+                }
+            } catch (e) {
+                console.error('[Processing Error]', e);
+                filter.disconnect();
+            } finally {
+                try { filter.close(); }
+                catch (e) { console.warn('[Close Error]', e); }
+                isProcessing = false;
+            }
+        };
+    },
+    { urls: ["https://x.com/i/api/graphql/*"] },
+    ["blocking"]
+);
+
+function findAllParents(obj, targetKeys, depth = 4) {
+    const results = [];
+    const seen = new WeakSet();
+
+    function _traverse(currentObj, path = []) {
+        if (!currentObj || seen.has(currentObj)) return;
+        seen.add(currentObj);
+
+        const entries = Array.isArray(currentObj)
+            ? currentObj.entries()
+            : Object.entries(currentObj);
+
+        for (const [key, value] of entries) {
+            if (targetKeys.includes(key)) {
+                const ancestor = path[path.length - depth];
+    
+                if (path.length >= depth + 3) {
+                    const resultParent = path[path.length - depth - 3];
+                    const quotedStatusParent = path[path.length - depth - 2];
+
+                    if (quotedStatusParent?.quoted_status_result && resultParent?.result) {
+                        const legacyIdStr = resultParent.result.legacy?.id_str;
+                        if (legacyIdStr && ancestor) {
+                            ancestor.referencedBy = legacyIdStr;
+                        }
+                    }
+                }
+                
+                if (ancestor) {
+                    results.push(ancestor);
+                }
+            }
+
+            if (value && typeof value === 'object') {
+                _traverse(value, [...path, currentObj]);
+            }
+        }
+    }
+
+    _traverse(obj);
+    return [...new Set(results)];
+}
+
 function processVideoSource({
     videoSource,
     tweetId,
