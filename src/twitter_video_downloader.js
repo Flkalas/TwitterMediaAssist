@@ -94,6 +94,61 @@ function getMaximumBitrate(videoSources) {
     return videoSources[0]['url']
 }
 
+function refineImageSourceParams(src) {
+    const url = new URL(src);
+    const searchParams = new URLSearchParams(url);
+    searchParams.set('name', 'orig')
+    url.search = searchParams
+
+    return url.toString()
+}
+
+function extractMedias(tweets) {
+    const mediaMap = {};
+
+    tweets.forEach(tweet => {
+        const mediaArr = tweet?.legacy?.extended_entities?.media;
+        if (!mediaArr) return;
+
+        const screenName = tweet.core?.user_results?.result?.legacy?.screen_name || 'unknown';
+        const tweetId = tweet.legacy.id_str;
+
+        mediaMap[tweetId] = mediaArr.map((media, index) => ({
+            ...media,
+            readableFilename: mediaArr.length === 1 
+                ? `${screenName}-${tweetId}` 
+                : `${screenName}-${tweetId}-${index + 1}`,
+            tweetId,
+            referencedBy: tweet.referencedBy
+        }));
+    });
+    
+    const medias = Object.values(mediaMap).flat().map(media => {
+        let url, type;
+        if (media.type === 'photo') {
+            type = 'image';
+            url = refineImageSourceParams(media.media_url_https);
+        } else if (media.type === 'video') {
+            type = 'video';
+            url = getMaximumBitrate(media.video_info.variants);
+        } else if (media.type === 'animated_gif') {
+            type = 'gif';
+            url = getMaximumBitrate(media.video_info.variants);
+        } else {
+            return null;
+        }
+        return {
+            type,
+            url,
+            readableFilename: media.readableFilename,
+            tweetId: media.tweetId,
+            referencedBy: media.referencedBy
+        };
+    }).filter(Boolean);
+
+    return medias;
+}
+
 async function extractGraphQlMedia(id, token) {
     try {
         const jsonResponse = await archiveTweetDetailJson(id, token)

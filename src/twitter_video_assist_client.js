@@ -184,11 +184,17 @@ async function downloadMediaObject(event) {
 
     const tweetSelector = event.data
     const tweet = $(event.currentTarget).closest(tweetSelector)
-    const tweetId = getTweetId(tweet, tweetSelector)
+    const sessionData = JSON.parse(sessionStorage.getItem(browser.runtime.id) || '[]');
 
-    media = await extractGraphQlMedia(tweetId, getCookie("ct0"))
-    media.map((eachMedia) => browser.runtime.sendMessage(eachMedia))
+    const mainTweetId = extractMainTweetId(tweet);
+    const relatedMedia = sessionData.filter(media => 
+        media.tweetId === mainTweetId || 
+        media.referencedBy === mainTweetId
+    );
 
+    relatedMedia.forEach(media => {
+        browser.runtime.sendMessage(media);
+    });
 }
 
 async function downloadVideoObject(tweet, tweetSelector, videoTags) {
@@ -224,14 +230,6 @@ function downloadImageObject(tweet, tweetSelector, imageTags) {
     })
 }
 
-function refineImageSourceParams(src) {
-    const url = new URL(src);
-    const searchParams = new URLSearchParams(url);
-    searchParams.set('name', 'orig')
-    url.search = searchParams
-
-    return url.toString()
-}
 
 function generateReadableFilename(tweet, selector, imageIndex) {
     if (!!imageIndex) {
@@ -278,6 +276,20 @@ function getTweetData(tweet, selector, re) {
     }
 }
 
+function extractMainTweetId(articleElem) {
+    var domElem = articleElem instanceof jQuery ? articleElem.get(0) : articleElem;
+    if (!domElem) return null;
+  
+    var links = domElem.querySelectorAll('a[href*="/status/"]');
+    for (const link of links) {
+      if (link.querySelector('time')) {
+        const match = link.href.match(/status\/(\d+)/);
+        if (match) return match[1];
+      }
+    }
+    return null;
+  }
+  
 function processRequest(request) {
     toggleReactProgressPopup(request)
 }
@@ -329,3 +341,16 @@ function isVideoExist(target) {
 function isVideoDownloadButton(target) {
     return $(target).find('button.tva_js_download')[0]
 }
+
+browser.runtime.onMessage.addListener((message) => {
+    if (message.type === 'UPDATE_SESSION_DATA') {
+
+        const currentData = JSON.parse(sessionStorage.getItem(browser.runtime.id) || '[]');
+        const mergedArray = [...currentData, ...message.data];
+        sessionStorage.setItem(browser.runtime.id, JSON.stringify(mergedArray))
+    }
+});
+
+window.addEventListener('pageshow', function (event) {
+    sessionStorage.removeItem(browser.runtime.id);
+});
