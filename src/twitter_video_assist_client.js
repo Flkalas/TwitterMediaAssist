@@ -179,14 +179,18 @@ function indexOfMedia(selector, originalIndex, totalCount) {
 }
 
 async function downloadMediaObject(event) {
+
     event.stopPropagation()
     event.preventDefault()
 
     const tweetSelector = event.data
+
     const tweet = $(event.currentTarget).closest(tweetSelector)
-    const sessionData = JSON.parse(sessionStorage.getItem(browser.runtime.id) || '[]');
+
+    const sessionData = JSON.parse(sessionStorage.getItem('TwitterMediaDownloader') || '[]');
 
     const mainTweetId = extractMainTweetId(tweet);
+
     const relatedMedia = sessionData.filter(media => 
         media.tweetId === mainTweetId || 
         media.referencedBy === mainTweetId
@@ -345,12 +349,12 @@ function isVideoDownloadButton(target) {
 browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'UPDATE_SESSION_DATA') {
 
-        const currentData = JSON.parse(sessionStorage.getItem(browser.runtime.id) || '[]');
+        const currentData = JSON.parse(sessionStorage.getItem('TwitterMediaDownloader') || '[]');
         const mergedArray = [...currentData, ...message.data];
-        sessionStorage.setItem(browser.runtime.id, JSON.stringify(mergedArray))
+        sessionStorage.setItem('TwitterMediaDownloader', JSON.stringify(mergedArray))
     }
 });
 
 window.addEventListener('pageshow', function (event) {
-    sessionStorage.removeItem(browser.runtime.id);
+    sessionStorage.removeItem('TwitterMediaDownloader');
 });
