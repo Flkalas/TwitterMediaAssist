@@ -20,7 +20,7 @@ window.addEventListener('message', (event) => {
 
   //making sure we're processing only our extension and tab events
   if (event.source !== window) return;
-  if (event.data?.source === 'TwitterMediaDownloader' && event.data.type === 'UPDATE_SESSION_DATA') {
+  if (event.data?.source === 'rectifying@gmail.com' && event.data.type === 'UPDATE_SESSION_DATA') {
 
     //pass the events further to the main code outside
     chrome.runtime.sendMessage({
