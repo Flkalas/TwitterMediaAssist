@@ -187,7 +187,7 @@ async function downloadMediaObject(event) {
 
     const tweet = $(event.currentTarget).closest(tweetSelector)
 
-    const sessionData = JSON.parse(sessionStorage.getItem('TwitterMediaDownloader') || '[]');
+    const sessionData = JSON.parse(sessionStorage.getItem('rectifying@gmail.com') || '[]');
 
     const mainTweetId = extractMainTweetId(tweet);
 
@@ -349,12 +349,12 @@ function isVideoDownloadButton(target) {
 browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'UPDATE_SESSION_DATA') {
 
-        const currentData = JSON.parse(sessionStorage.getItem('TwitterMediaDownloader') || '[]');
+        const currentData = JSON.parse(sessionStorage.getItem('rectifying@gmail.com') || '[]');
         const mergedArray = [...currentData, ...message.data];
-        sessionStorage.setItem('TwitterMediaDownloader', JSON.stringify(mergedArray))
+        sessionStorage.setItem('rectifying@gmail.com', JSON.stringify(mergedArray))
     }
 });
 
 window.addEventListener('pageshow', function (event) {
-    sessionStorage.removeItem('TwitterMediaDownloader');
+    sessionStorage.removeItem('rectifying@gmail.com');
 });

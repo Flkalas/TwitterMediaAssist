@@ -57,10 +57,10 @@
 
             if (parents.length > 0) {
                 const medias = extractMedias(parents);
-                const existing = JSON.parse(sessionStorage.getItem('TwitterMediaDownloader') || '[]');
+                const existing = JSON.parse(sessionStorage.getItem('rectifying@gmail.com') || '[]');
 
                 const updated = deduplicateMedia(existing, medias)
-                sessionStorage.setItem('TwitterMediaDownloader', JSON.stringify(updated));
+                sessionStorage.setItem('rectifying@gmail.com', JSON.stringify(updated));
 
             }
         } catch (e) {
