@@ -110,7 +110,7 @@ function extractMedias(tweets) {
         const mediaArr = tweet?.legacy?.extended_entities?.media;
         if (!mediaArr) return;
 
-        const screenName = tweet.core?.user_results?.result?.legacy?.screen_name || 'unknown';
+        const screenName = tweet.core?.user_results?.result?.core?.screen_name || 'unknown';
         const tweetId = tweet.legacy.id_str;
 
         mediaMap[tweetId] = mediaArr.map((media, index) => ({
